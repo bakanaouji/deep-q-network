@@ -124,6 +124,8 @@ class DQN():
         return next_state
 
     def add_memory(self, state, action, reward, next_state, done):
+        # 報酬が正なら1に，負なら-1に変換
+        reward = np.sign(reward)
         # Replay Memoryに遷移を保存
         self.replay_memory.append((state, action, reward, next_state, done))
         # Replay Memoryが一定数を超えたら，古い遷移から削除
@@ -194,7 +196,11 @@ class DQN():
         return summary_placeholders, update_ops, summary_op
 
     def choose_action_at_test(self, action_num, state):
-        action = np.argmax(self.q_values.eval(feed_dict={self.s: [np.float32(state / 255.0)]}))
+        if np.random.rand() < 0.0:
+            action = np.random.randint(action_num)
+        else:
+            avalue = self.q_values.eval(feed_dict={self.s: [np.float32(state / 255.0)]})
+            action = np.argmax(avalue)
         return action
 
     def main(self):
@@ -293,7 +299,7 @@ class DQN():
                     last_action = action
                     # 行動を実行し，報酬と次の画面とdoneを観測
                     observation, reward, done, info = env.step(acts[action])
-                    # env.render()
+                    env.render()
                     # 前処理して次の状態s_{t+1}を生成
                     next_state = self.preprocess_state(state, observation, last_observation)
                     # replay memoryに(s_t,a_t,r_t,s_{t+1},done)を追加
@@ -343,18 +349,22 @@ class DQN():
                 for _ in range(T):
                     last_observation = observation
                     observation, _, _, _ = env.step(acts[0])  # Do nothing
+                    env.render()
                 last_action = 0
                 state = self.first_preprosess_state(observation, last_observation)
+                i = 0
                 while not terminal:
-                    last_observation = observation
-                    if t % self.action_repeat == 0:
+                    env.render()
+                    if np.sum(last_observation != observation) == 0:
+                        action = 0
+                    elif t % self.action_repeat == 0:
                         # ε-greedyに従って行動を選択
                         action = self.choose_action_at_test(action_num, state)
                     else:
                         # 前フレームに選択した行動を選択
                         action = last_action
+                    last_observation = observation
                     observation, _, terminal, _ = env.step(acts[action])
-                    env.render()
                     next_state = self.preprocess_state(state, observation, last_observation)
                     # 状態を更新
                     state = next_state.copy()
@@ -364,8 +374,8 @@ class DQN():
 if __name__ == '__main__':
     params = {}
     params['env_name'] = 'Breakout-v0'  # 環境の名称
-    params['load_network'] = False
-    params['train'] = True
+    params['load_network'] = True
+    params['train'] = False
     params['seed'] = 0  # 乱数シード
     params['save_network_freq'] = 300000  # Q_networkを保存する頻度（フレーム数で計測）
     params['save_network_path'] = 'saved_networks/' + params['env_name']
