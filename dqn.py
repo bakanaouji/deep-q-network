@@ -29,7 +29,8 @@ class DQN():
         self.minibatch_size = params['minibatch_size']
         self.replay_memory_size = params['replay_memory_size']
         self.agent_history_length = params['agent_history_length']
-        self.target_network_update_frequency = params['target_network_update_frequency']
+        self.target_network_update_frequency = params[
+            'target_network_update_frequency']
         self.discount_factor = params['discount_factor']
         self.action_repeat = params['action_repeat']
         self.learning_rate = params['learning_rate']
@@ -81,7 +82,9 @@ class DQN():
         model.add(Flatten())
         model.add(Dense(512, activation='relu'))
         model.add(Dense(num_actions))
-        s = tf.placeholder(tf.float32, [None, self.agent_history_length, self.frame_width, self.frame_height])
+        s = tf.placeholder(tf.float32,
+                           [None, self.agent_history_length, self.frame_width,
+                            self.frame_height])
         q_values = model(s)
 
         return s, q_values, model
@@ -98,7 +101,8 @@ class DQN():
         if self.epsilon >= np.random.rand():
             action = np.random.randint(action_num)
         else:
-            action = np.argmax(self.q_values.eval(feed_dict={self.s: [np.float32(state / 255.0)]}))
+            action = np.argmax(self.q_values.eval(
+                feed_dict={self.s: [np.float32(state / 255.0)]}))
         return action
 
     def first_preprosess_state(self, observation, last_observation):
@@ -106,9 +110,11 @@ class DQN():
         processed_observation = np.maximum(observation, last_observation)
         # グレースケール変換，リサイズ
         processed_observation = np.uint8(
-            resize(rgb2gray(processed_observation), (self.frame_width, self.frame_height)) * 255)
+            resize(rgb2gray(processed_observation),
+                   (self.frame_width, self.frame_height)) * 255)
         # 同じ画像を並べてスタック
-        state = [processed_observation for _ in range(self.agent_history_length)]
+        state = [processed_observation for _ in
+                 range(self.agent_history_length)]
         return np.stack(state, axis=0)
 
     def preprocess_state(self, state, observation, last_observation):
@@ -116,8 +122,10 @@ class DQN():
         processed_observation = np.maximum(observation, last_observation)
         # グレースケール変換，リサイズ
         processed_observation = np.uint8(
-            resize(rgb2gray(processed_observation), (self.frame_width, self.frame_height)) * 255)
-        processed_observation = np.reshape(processed_observation, (1, self.frame_width, self.frame_height))
+            resize(rgb2gray(processed_observation),
+                   (self.frame_width, self.frame_height)) * 255)
+        processed_observation = np.reshape(processed_observation, (
+            1, self.frame_width, self.frame_height))
         # 次の状態を作成
         next_state = np.append(state[1:, :, :], processed_observation, axis=0)
         return next_state
@@ -150,9 +158,12 @@ class DQN():
         done_batch = np.array(done_batch) + 0
 
         target_q_values_batch = self.target_q_values.eval(
-            feed_dict={self.target_s: np.float32(np.array(next_state_batch) / 255.0)})  # Target Networkで次の状態でのQ値を計算
-        y_batch = reward_batch + (1.0 - done_batch) * self.discount_factor * np.max(target_q_values_batch,
-                                                                                    axis=1)  # 教師信号を計算
+            feed_dict={self.target_s: np.float32(np.array(
+                next_state_batch) / 255.0)})  # Target Networkで次の状態でのQ値を計算
+        y_batch = reward_batch + (
+                                     1.0 - done_batch) * self.discount_factor * np.max(
+            target_q_values_batch,
+            axis=1)  # 教師信号を計算
         # 勾配法による誤差最小化
         loss, _ = self.sess.run([self.loss, self.grad_update], feed_dict={
             self.s: np.float32(np.array(state_batch) / 255.0),
@@ -172,10 +183,12 @@ class DQN():
         quadratic_part = tf.clip_by_value(error, -1.0, 1.0)
         loss = tf.reduce_mean(tf.square(quadratic_part))  # 誤差関数
 
-        optimizer = tf.train.RMSPropOptimizer(self.learning_rate, momentum=self.gradient_momentum,
+        optimizer = tf.train.RMSPropOptimizer(self.learning_rate,
+                                              momentum=self.gradient_momentum,
                                               decay=self.squared_gradient_momuntum,
                                               epsilon=self.min_squared_gradient)  # 最適化手法を定義
-        grad_update = optimizer.minimize(loss, var_list=self.q_network_weights)  # 誤差最小化
+        grad_update = optimizer.minimize(loss,
+                                         var_list=self.q_network_weights)  # 誤差最小化
 
         return a, y, loss, grad_update
 
@@ -198,8 +211,10 @@ class DQN():
         if np.random.rand() < 0.0:
             action = np.random.randint(action_num)
         else:
-            avalue = self.q_values.eval(feed_dict={self.s: [np.float32(state / 255.0)]})
+            avalue = self.q_values.eval(
+                feed_dict={self.s: [np.float32(state / 255.0)]})
             action = np.argmax(avalue)
+            # print(avalue)
         return action
 
     def main(self):
@@ -219,15 +234,19 @@ class DQN():
         self.q_network_weights = self.q_network.trainable_weights  # 学習される重みのリスト
 
         # Target_networkを重みθ^-=θで初期化
-        self.target_s, self.target_q_values, self.target_network = self.init_q_network(action_num)
+        self.target_s, self.target_q_values, self.target_network = self.init_q_network(
+            action_num)
         self.target_network_weights = self.target_network.trainable_weights  # 重みのリスト
 
         # 定期的にTarget Networkを更新するための処理の構築
-        self.assign_target_network = [self.target_network_weights[i].assign(self.q_network_weights[i]) for i in
-                                      range(len(self.target_network_weights))]
+        self.assign_target_network = [
+            self.target_network_weights[i].assign(self.q_network_weights[i]) for
+            i in
+            range(len(self.target_network_weights))]
 
         # 誤差関数や最適化のための処理の構築
-        self.a, self.y, self.loss, self.grad_update = self.build_training_op(action_num)
+        self.a, self.y, self.loss, self.grad_update = self.build_training_op(
+            action_num)
 
         # Sessionの構築
         self.sess = tf.InteractiveSession()
@@ -248,7 +267,8 @@ class DQN():
             checkpoint = tf.train.get_checkpoint_state(self.save_network_path)
             if checkpoint and checkpoint.model_checkpoint_path:
                 self.saver.restore(self.sess, checkpoint.model_checkpoint_path)
-                print('Successfully loaded: ' + checkpoint.model_checkpoint_path)
+                print(
+                    'Successfully loaded: ' + checkpoint.model_checkpoint_path)
             else:
                 print('Training new network...')
 
@@ -270,7 +290,8 @@ class DQN():
                     observation, _, _, _ = env.step(acts[0])
                 last_action = 0
                 # 初期状態の生成
-                state = self.first_preprosess_state(observation, last_observation)
+                state = self.first_preprosess_state(observation,
+                                                    last_observation)
                 duration = 0
                 total_reward = 0.0
                 total_q_max = 0.0
@@ -283,16 +304,19 @@ class DQN():
                     else:
                         if t % self.action_repeat == 0:
                             # ε-greedyに従って行動を選択
-                            action = self.choose_action_by_epsilon_greedy(action_num, state)
+                            action = self.choose_action_by_epsilon_greedy(
+                                action_num, state)
                         else:
                             # 前フレームに選択した行動を選択
                             action = last_action
                         # εを線形減少
-                        self.epsilon = max(self.final_exploration, self.epsilon - (
-                            self.initial_exploration - self.final_exploration) / self.final_exploration_frame)
+                        self.epsilon = max(self.final_exploration,
+                                           self.epsilon - (
+                                               self.initial_exploration - self.final_exploration) / self.final_exploration_frame)
                         # ネットワークを保存
                         if t % self.save_network_freq == 0:
-                            save_path = self.saver.save(self.sess, self.save_network_path + '/' + self.env_name,
+                            save_path = self.saver.save(self.sess,
+                                                        self.save_network_path + '/' + self.env_name,
                                                         global_step=t)
                             print('Successfully saved: ' + save_path)
                     last_action = action
@@ -300,7 +324,8 @@ class DQN():
                     observation, reward, done, info = env.step(acts[action])
                     env.render()
                     # 前処理して次の状態s_{t+1}を生成
-                    next_state = self.preprocess_state(state, observation, last_observation)
+                    next_state = self.preprocess_state(state, observation,
+                                                       last_observation)
                     # replay memoryに(s_t,a_t,r_t,s_{t+1},done)を追加
                     # deepcopyになってるかな？？
                     self.add_memory(state, action, reward, next_state, done)
@@ -310,17 +335,20 @@ class DQN():
                         if t % self.action_repeat == 0:
                             # Q-Networkの学習
                             total_loss += self.learn()
-                        if t % (self.target_network_update_frequency * self.action_repeat) == 0:
+                        if t % (
+                                    self.target_network_update_frequency * self.action_repeat) == 0:
                             # Target Networkの更新
                             self.update_target_network()
                     total_reward += reward
-                    total_q_max += np.max(self.q_values.eval(feed_dict={self.s: [np.float32(state / 255.0)]}))
+                    total_q_max += np.max(self.q_values.eval(
+                        feed_dict={self.s: [np.float32(state / 255.0)]}))
                     t += 1
                     duration += 1
                     # Write summary
                 if t >= self.replay_start_size:
                     stats = [total_reward, total_q_max / float(duration),
-                             duration, total_loss / (float(duration) / float(self.action_repeat))]
+                             duration, total_loss / (
+                                 float(duration) / float(self.action_repeat))]
                     for i in range(len(stats)):
                         self.sess.run(self.update_ops[i], feed_dict={
                             self.summary_placeholders[i]: float(stats[i])
@@ -337,10 +365,11 @@ class DQN():
                     'EPISODE: {0:6d} / TIMESTEP: {1:8d} / DURATION: {2:5d} / EPSILON: {3:.5f} / TOTAL_REWARD: {4:3.0f} / AVG_MAX_Q: {5:2.4f} / AVG_LOSS: {6:.5f} / MODE: {7}'.format(
                         episode + 1, t, duration, self.epsilon,
                         total_reward, total_q_max / float(duration),
-                        total_loss / (float(duration) / float(self.action_repeat)), mode))
+                        total_loss / (
+                            float(duration) / float(self.action_repeat)), mode))
         else:
             # env.monitor.start(ENV_NAME + '-test')
-            for _ in range(self.episode_num_at_test):
+            for episode in range(self.episode_num_at_test):
                 terminal = False
                 observation = env.reset()
                 # ランダムなフレーム数分「何もしない」
@@ -350,8 +379,10 @@ class DQN():
                     observation, _, _, _ = env.step(acts[0])  # Do nothing
                     env.render()
                 last_action = 0
-                state = self.first_preprosess_state(observation, last_observation)
-                i = 0
+                state = self.first_preprosess_state(observation,
+                                                    last_observation)
+                duration = 0
+                total_reward = 0.0
                 while not terminal:
                     env.render()
                     if np.sum(last_observation != observation) == 0:
@@ -363,11 +394,18 @@ class DQN():
                         # 前フレームに選択した行動を選択
                         action = last_action
                     last_observation = observation
-                    observation, _, terminal, _ = env.step(acts[action])
-                    next_state = self.preprocess_state(state, observation, last_observation)
+                    observation, reward, terminal, _ = env.step(acts[action])
+                    next_state = self.preprocess_state(state, observation,
+                                                       last_observation)
                     # 状態を更新
                     state = next_state.copy()
-                    # env.monitor.close()
+                    total_reward += reward
+                    duration += 1
+                print(
+                    'EPISODE: {0:6d} / DURATION: {1:5d} / TOTAL_REWARD: {2:3.0f}'.format(
+                        episode + 1, duration,
+                        total_reward))
+                # env.monitor.close()
 
 
 if __name__ == '__main__':
@@ -379,7 +417,7 @@ if __name__ == '__main__':
     params['save_network_freq'] = 300000  # Q_networkを保存する頻度（フレーム数で計測）
     params['save_network_path'] = 'saved_networks/' + params['env_name']
     params['save_summary_path'] = 'summary/' + params['env_name']
-    params['tmax'] = 8000000  # プレイするエピソード数
+    params['tmax'] = 50000000  # プレイするエピソード数
     params['episode_num_at_test'] = 100
     params['frame_width'] = 84  # リサイズ後のフレー0ム幅
     params['frame_height'] = 84  # リサイズ後のフレーム高さ
@@ -387,20 +425,26 @@ if __name__ == '__main__':
     # DQNのユーザパラメータ
     params['minibatch_size'] = 32  # SGDによる更新に用いる訓練データの数
     # params['replay_memory_size'] = 1000000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
-    params['replay_memory_size'] = 500000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
+    params[
+        'replay_memory_size'] = 500000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
     params['agent_history_length'] = 4  # Q_networkの入力として与える，直近のフレームの数
-    params['target_network_update_frequency'] = 10000  # target_networkが更新される頻度（パラメータの更新頻度数で計測）
+    params[
+        'target_network_update_frequency'] = 10000  # target_networkが更新される頻度（パラメータの更新頻度数で計測）
     params['discount_factor'] = 0.99  # Q_learningの更新でも用いられる割引率γ
     params['action_repeat'] = 1  # エージェントは，このフレーム数毎に行動選択を行う．
     params['learning_rate'] = 0.00025  # RMSPropで使用される学習率
     params['gradient_momentum'] = 0.95  # RMSPropで使用されるGradient momuntum
-    params['squared_gradient_momuntum'] = 0.95  # RMSPropで使用されるSquared gradient (denominator) momentum
-    params['min_squared_gradient'] = 0.01  # RMSPropの更新の際，Squared gradient (denominator)に加算される定数
+    params[
+        'squared_gradient_momuntum'] = 0.95  # RMSPropで使用されるSquared gradient (denominator) momentum
+    params[
+        'min_squared_gradient'] = 0.01  # RMSPropの更新の際，Squared gradient (denominator)に加算される定数
     params['initial_exploration'] = 1.0  # ε-greedyにおけるεの初期値
     params['final_exploration'] = 0.1  # ε-greedyにおけるεの最終値
-    params['final_exploration_frame'] = 1000000  # εが初期値から最終値に線形減少した時に，最終値に到達するフレーム数
+    params[
+        'final_exploration_frame'] = 1000000  # εが初期値から最終値に線形減少した時に，最終値に到達するフレーム数
     # params['replay_start_size'] = 50000  # 学習が始める前に，このフレーム数に対して一様ランダムに行動を選択する政策が実行され，その経験がReplay memoryに蓄えられる
-    params['replay_start_size'] = 25000  # 学習が始める前に，このフレーム数に対して一様ランダムに行動を選択する政策が実行され，その経験がReplay memoryに蓄えられる
-    params['no_op_max'] = 30  # エピソードの開始時に，エージェントが「何もしない」行動を選択するフレーム数
+    params[
+        'replay_start_size'] = 25000  # 学習が始める前に，このフレーム数に対して一様ランダムに行動を選択する政策が実行され，その経験がReplay memoryに蓄えられる
+    params['no_op_max'] = 5  # エピソードの開始時に，エージェントが「何もしない」行動を選択するフレーム数
     dqn = DQN(**params)
     dqn.main()
