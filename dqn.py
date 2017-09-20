@@ -7,7 +7,7 @@ import tensorflow as tf
 from collections import deque
 from skimage.color import rgb2gray
 from skimage.transform import resize
-from keras.layers import Convolution2D, Flatten, Dense
+from keras.layers import Conv2D, Flatten, Dense
 from keras.models import Sequential
 
 
@@ -75,10 +75,9 @@ class DQN():
             model: Q-Networkのモデル
         """
         model = Sequential()
-        model.add(Convolution2D(32, 8, 8, subsample=(4, 4), activation='relu',
-                                input_shape=(self.agent_history_length, self.frame_width, self.frame_height)))
-        model.add(Convolution2D(64, 4, 4, subsample=(2, 2), activation='relu'))
-        model.add(Convolution2D(64, 3, 3, subsample=(1, 1), activation='relu'))
+        model.add(Conv2D(32, (8, 8), strides=(4, 4), activation='relu', input_shape=(self.agent_history_length, self.frame_width, self.frame_height), data_format='channels_first'))
+        model.add(Conv2D(64, (4, 4), strides=(2, 2), activation='relu'))
+        model.add(Conv2D(64, (3, 3), strides=(1, 1), activation='relu'))
         model.add(Flatten())
         model.add(Dense(512, activation='relu'))
         model.add(Dense(num_actions))
@@ -167,7 +166,7 @@ class DQN():
         y = tf.placeholder(tf.float32, [None])  # 教師信号
 
         a_one_hot = tf.one_hot(a, num_actions, 1.0, 0.0)  # 行動をone hot vectorに変換する
-        q_value = tf.reduce_sum(tf.mul(self.q_values, a_one_hot), reduction_indices=1)  # 行動のQ値の計算
+        q_value = tf.reduce_sum(tf.multiply(self.q_values, a_one_hot), reduction_indices=1)  # 行動のQ値の計算
         # エラークリップ
         error = y - q_value
         quadratic_part = tf.clip_by_value(error, -1.0, 1.0)
@@ -182,17 +181,17 @@ class DQN():
 
     def setup_summary(self):
         episode_total_reward = tf.Variable(0.)
-        tf.scalar_summary(self.env_name + '/Total Reward/Episode', episode_total_reward)
+        tf.summary.scalar(self.env_name + '/Total Reward/Episode', episode_total_reward)
         episode_avg_max_q = tf.Variable(0.)
-        tf.scalar_summary(self.env_name + '/Average Max Q/Episode', episode_avg_max_q)
+        tf.summary.scalar(self.env_name + '/Average Max Q/Episode', episode_avg_max_q)
         episode_duration = tf.Variable(0.)
-        tf.scalar_summary(self.env_name + '/Duration/Episode', episode_duration)
+        tf.summary.scalar(self.env_name + '/Duration/Episode', episode_duration)
         episode_avg_loss = tf.Variable(0.)
-        tf.scalar_summary(self.env_name + '/Average Loss/Episode', episode_avg_loss)
+        tf.summary.scalar(self.env_name + '/Average Loss/Episode', episode_avg_loss)
         summary_vars = [episode_total_reward, episode_avg_max_q, episode_duration, episode_avg_loss]
         summary_placeholders = [tf.placeholder(tf.float32) for _ in range(len(summary_vars))]
         update_ops = [summary_vars[i].assign(summary_placeholders[i]) for i in range(len(summary_vars))]
-        summary_op = tf.merge_all_summaries()
+        summary_op = tf.summary.merge_all()
         return summary_placeholders, update_ops, summary_op
 
     def choose_action_at_test(self, action_num, state):
@@ -234,7 +233,7 @@ class DQN():
         self.sess = tf.InteractiveSession()
         self.saver = tf.train.Saver(self.q_network_weights)
         self.summary_placeholders, self.update_ops, self.summary_op = self.setup_summary()
-        self.summary_writer = tf.train.SummaryWriter(self.save_summary_path, self.sess.graph)
+        self.summary_writer = tf.summary.FileWriter(self.save_summary_path, self.sess.graph)
 
         if not os.path.exists(self.save_network_path):
             os.makedirs(self.save_network_path)
