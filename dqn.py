@@ -417,7 +417,7 @@ if __name__ == '__main__':
     params['save_network_freq'] = 300000  # Q_networkを保存する頻度（フレーム数で計測）
     params['save_network_path'] = 'saved_networks/' + params['env_name']
     params['save_summary_path'] = 'summary/' + params['env_name']
-    params['tmax'] = 50000000  # プレイするエピソード数
+    params['tmax'] = 50000000  # 学習をやめる行動数
     params['episode_num_at_test'] = 100
     params['frame_width'] = 84  # リサイズ後のフレー0ム幅
     params['frame_height'] = 84  # リサイズ後のフレーム高さ
