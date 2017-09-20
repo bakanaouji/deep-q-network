@@ -258,7 +258,7 @@ class DQN():
             os.makedirs(self.save_network_path)
 
         # 変数の初期化（Q Networkの初期化）
-        self.sess.run(tf.initialize_all_variables())
+        self.sess.run(tf.global_variables_initializer())
 
         # Target Networkの初期化
         self.sess.run(self.assign_target_network)
