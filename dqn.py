@@ -283,7 +283,7 @@ class DQN():
                 done = False
                 observation = env.reset()
                 # ランダムなフレーム数分「何もしない」
-                T = np.random.randint(1, self.no_op_max)
+                T = np.random.randint(1, self.no_op_max + 1)
                 for _ in range(T):
                     last_observation = observation
                     # 「何もしない」で，次の画面を返す
