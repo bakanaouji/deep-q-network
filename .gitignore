@@ -50,4 +50,4 @@ summary
 *.fdb_latexmk
 *.fls
 *.log
-*.synctex.gx
+*.synctex.gz
