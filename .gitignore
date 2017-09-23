@@ -43,3 +43,11 @@ bin
 log
 saved_networks
 summary
+
+#tex
+*.aux
+*.dvi
+*.fdb_latexmk
+*.fls
+*.log
+*.synctex.gx
