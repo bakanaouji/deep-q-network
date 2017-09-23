@@ -1,0 +1,78 @@
+\documentclass{jarticle}
+\usepackage{fancybox}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{wrapfig}%文字の画像回り込み
+\usepackage{comment}
+\usepackage{multicol}
+\usepackage{txfonts,here}
+\usepackage{algorithm} %algorithmとalgorithmic環境を利用するのに必要．
+\usepackage{algcompatible}
+\algblockdefx{FORP}{ENDFORP}[1]%
+  {\textbf{for}#1 \textbf{do in parallel}}%
+  {\textbf{end for}}
+\usepackage{bm}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{subfigure}
+\usepackage{listings}
+\usepackage[top=30truemm,bottom=30truemm,left=25truemm,right=25truemm]{geometry}
+\usepackage{url}
+% \newcommand{\argmax}{\mathop{\rm arg~max}\limits}
+% \newcommand{\argmin}{\mathop{\rm arg~min}\limits}
+%%%% ↓algotithmic の \REQUIRE と \ENSURE の表記を変更する
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+%%%% ↑algotithmic の \REQUIRE と \ENSURE の表記を変更する
+
+\begin{document}
+\begin{algorithm}[tb]
+\caption{Deep Q-learning with experience replay}
+\label{alg:dqn}                          
+\begin{algorithmic}[1]   
+\REQUIRE $n_{\mathrm{batch}},n_{\mathrm{rmem}},l_{\mathrm{history}},f_{\mathrm{tnupdate}},\gamma,r_{\mathrm{learn}},m_{\mathrm{gradient}},m_{\mathrm{sgradient}},g_{\mathrm{min}},\epsilon_{\mathrm{first}},\epsilon_{\mathrm{final}},l_{\mathrm{expl}},n_{\mathrm{rpstart}},l_{\mathrm{nomax}}$
+\STATE Replay Memory$~D$を初期化
+\STATE Q-Network$~Q$をランダムな重み$\theta$で初期化
+\STATE Target network$~Q^-$を重み$\theta^-=\theta$で初期化
+\FOR{$\mathrm{episode}=1,\cdots,M$}
+\STATE $T\sim U(1,l_{\mathrm{nomax}})$
+\FOR{$t^{\prime}=1,\cdots,T$}
+\STATE $a_t=(\mbox{do nothing})$の実行→初期状態の生成
+\ENDFOR
+\STATE $t=1$
+\WHILE{not $done$}
+\IF{$t\leq n_{\mathrm{rpstart}}$}
+\STATE $a_t$をランダムに決定→Replay Memoryの確保
+\ELSE
+\IF{$(t-1)\%l_{\mathrm{history}}=0$}
+\STATE ε-greedyに従って行動$a_t$を選択
+\ELSE
+\STATE $a_t=a_{t-1}$
+\ENDIF
+\STATE $\epsilon=\max{(\epsilon_{\mathrm{final}},\epsilon-\frac{\epsilon_{\mathrm{first}}-\epsilon_{\mathrm{final}}}{l_{\mathrm{expl}}})}$→εを線形減少
+\ENDIF
+\STATE 行動$a_t$を実行し，報酬$r_t$と次の画面$x_{t+1}$と$done$を観測
+\STATE 前処理して次の状態$s_{t+1}$を生成
+\STATE $D$に$(s_t,a_t,r_t,s_{t+1},done)$を追加，$|D|>n_{\mathrm{nmem}}$なら古いものを削除する．
+\IF{$t>n_{\mathrm{rpstart}}$}
+\IF{$(t-1)\%l_{\mathrm{history}}=0$}
+\STATE $D$からランダムに$(s_j,a_j,r_j,s_{j+1},done)$を$n_{\mathrm{batch}}$個の履歴をサンプル
+\STATE $y_j=
+\begin{cases}
+r_j & (done) \\
+r_j+\gamma\max_{a^{\prime}}Q^-(s_{j+1},a^{\prime};\theta^-) & (\mbox{otherwise})
+\end{cases}$
+\STATE $\theta$を$(y_j-Q(s_j,a_j;\theta))^2$の勾配方向にRMSProp$(r_{\mathrm{learn}},m_{\mathrm{gradient}},m_{\mathrm{sgradient}},g_{\mathrm{min}})$を用いて更新（勾配計算の後の更新の際，$r_j$は$[-1,1]$にクリップされる）
+\ENDIF
+\IF{$(t-1)\%(f_{\mathrm{tnupdate}}\times l_{\mathrm{history}})=0$}
+\STATE $Q^-=Q$
+\ENDIF
+\ENDIF
+\STATE $t=t+1$
+\ENDWHILE
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+\end{document}
