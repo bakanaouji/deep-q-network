@@ -229,7 +229,7 @@ class DQN():
         return action
 
     def main(self):
-        # シードセット（統一できてない）
+        # シードセット
         np.random.seed(self.seed)
         # 環境
         env = gym.make(self.env_name)
@@ -431,32 +431,25 @@ if __name__ == '__main__':
     params['save_summary_path'] = 'summary/' + params['env_name']
     params['tmax'] = 50000000  # 学習をやめる行動数
     params['episode_num_at_test'] = 100
-    params['frame_width'] = 84  # リサイズ後のフレー0ム幅
+    params['frame_width'] = 84  # リサイズ後のフレーム幅
     params['frame_height'] = 84  # リサイズ後のフレーム高さ
 
     # DQNのユーザパラメータ
     params['minibatch_size'] = 32  # SGDによる更新に用いる訓練データの数
     # params['replay_memory_size'] = 1000000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
-    params[
-        'replay_memory_size'] = 500000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
+    params['replay_memory_size'] = 500000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
     params['agent_history_length'] = 4  # Q_networkの入力として与える，直近のフレームの数
-    params[
-        'target_network_update_frequency'] = 10000  # target_networkが更新される頻度（パラメータの更新頻度数で計測）
+    params['target_network_update_frequency'] = 10000  # target_networkが更新される頻度（パラメータの更新頻度数で計測）
     params['discount_factor'] = 0.99  # Q_learningの更新でも用いられる割引率γ
     params['action_repeat'] = 1  # エージェントは，このフレーム数毎に行動選択を行う．
     params['learning_rate'] = 0.00025  # RMSPropで使用される学習率
     params['gradient_momentum'] = 0.95  # RMSPropで使用されるGradient momuntum
-    params[
-        'squared_gradient_momuntum'] = 0.95  # RMSPropで使用されるSquared gradient (denominator) momentum
-    params[
-        'min_squared_gradient'] = 0.01  # RMSPropの更新の際，Squared gradient (denominator)に加算される定数
+    params['squared_gradient_momuntum'] = 0.95  # RMSPropで使用されるSquared gradient (denominator) momentum
+    params['min_squared_gradient'] = 0.01  # RMSPropの更新の際，Squared gradient (denominator)に加算される定数
     params['initial_exploration'] = 1.0  # ε-greedyにおけるεの初期値
     params['final_exploration'] = 0.1  # ε-greedyにおけるεの最終値
-    params[
-        'final_exploration_frame'] = 1000000  # εが初期値から最終値に線形減少した時に，最終値に到達するフレーム数
-    # params['replay_start_size'] = 50000  # 学習が始める前に，このフレーム数に対して一様ランダムに行動を選択する政策が実行され，その経験がReplay memoryに蓄えられる
-    params[
-        'replay_start_size'] = 25000  # 学習が始める前に，このフレーム数に対して一様ランダムに行動を選択する政策が実行され，その経験がReplay memoryに蓄えられる
+    params['final_exploration_frame'] = 1000000  # εが初期値から最終値に線形減少した時に，最終値に到達するフレーム数
+    params['replay_start_size'] = 25000  # 学習を始める前に，このフレーム数に対して一様ランダムに行動を選択する政策が実行され，その経験がReplay memoryに蓄えられる
     params['no_op_max'] = 5  # エピソードの開始時に，エージェントが「何もしない」行動を選択するフレーム数
     dqn = DQN(**params)
     dqn.main()
