@@ -16,7 +16,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(s_shape, [None, agent_history_length, frame_width, frame_height])
         q_values_shape = q_values.get_shape().as_list()
         self.assertEqual(q_values_shape, [None, num_actions])
-        plot_model(q_network, to_file='model.png')
+        plot_model(q_network, show_shapes=True, to_file='model.png')
 
 if __name__ == '__main__':
     unittest.main()
