@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+from collections import deque
 
 class NoopResetEnv(gym.Wrapper):
     def __init__(self, env, no_op_max):
@@ -15,5 +16,25 @@ class NoopResetEnv(gym.Wrapper):
             # 「何もしない」で，次の画面を返す
             # @todo pongの場合，0：何もしない，1：何もしない，2：上，3：下なので修正が必要と思われる
             observation, _, _, _ = self.env.step(0)
-            self.env.render()
         return observation
+
+class MaxAndSkipEnv(gym.Wrapper):
+    def __init__(self, env, action_repeat):
+        super(MaxAndSkipEnv, self).__init__(env)
+        self.observation_buffer = deque(maxlen=2)
+        self.action_repeat = action_repeat
+
+    def _step(self, action):
+        total_reward = 0.0
+        done = None
+        for _ in range(self.action_repeat):
+            observation, reward, done, info = self.env.step(action)
+            self.observation_buffer.append(observation)
+            total_reward += reward
+            self.env.render()
+            if done:
+                break
+
+        # 前のフレームの観測との最大値を状態として返す
+        max_frame = np.max(np.stack(self.observation_buffer), axis=0)
+        return max_frame, total_reward, done, info
