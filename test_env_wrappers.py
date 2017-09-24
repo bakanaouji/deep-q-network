@@ -9,7 +9,7 @@ class TestEnvWrappers(unittest.TestCase):
         no_op_maxフレーム分だけ何もしてなければおｋ
         """
         env = gym.make("PongNoFrameskip-v4")
-        env = NoopResetEnv(env, no_op_max=30)
+        env = NoopResetEnv(env, no_op_max=300)
         env.reset()
 
 if __name__ == '__main__':
