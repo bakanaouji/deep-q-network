@@ -13,6 +13,7 @@ class NoopResetEnv(gym.Wrapper):
         observation = None
         for _ in range(T):
             # 「何もしない」で，次の画面を返す
-            # @todo 0番目が「何もしない行動かどうかをチェック」
-            observation, _, _, _ = self.env.step(0)
+            # @todo pongの場合，0：何もしない，1：何もしない，2：上，3：下なので修正が必要と思われる
+            observation, _, _, _ = self.env.step(2)
+            self.env.render()
         return observation
