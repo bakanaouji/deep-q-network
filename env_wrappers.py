@@ -31,10 +31,23 @@ class MaxAndSkipEnv(gym.Wrapper):
             observation, reward, done, info = self.env.step(action)
             self.observation_buffer.append(observation)
             total_reward += reward
-            self.env.render()
             if done:
                 break
 
         # 前のフレームの観測との最大値を状態として返す
         max_frame = np.max(np.stack(self.observation_buffer), axis=0)
         return max_frame, total_reward, done, info
+
+class FireResetEnv(gym.Wrapper):
+    def __init__(self, env):
+        super(FireResetEnv, self).__init__(env)
+
+    def _reset(self):
+        self.env.reset()
+        observation, _, done, _ = self.env.step(1)
+        if done:
+            self.env.reset()
+        observation, _, done, _ = self.env.step(2)
+        if done:
+            self.env.reset()
+        return observation

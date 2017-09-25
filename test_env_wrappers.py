@@ -1,6 +1,6 @@
 import unittest
 import gym
-from env_wrappers import NoopResetEnv, MaxAndSkipEnv
+from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv
 
 class TestEnvWrappers(unittest.TestCase):
 
@@ -22,6 +22,17 @@ class TestEnvWrappers(unittest.TestCase):
         env = MaxAndSkipEnv(env, action_repeat=4)
         env.reset()
         env.step(0)
+
+    def test_fire_reset_env(self):
+        """
+        ゲームが開始されていれば観測値が前フレームと変わっているはずなので，
+        観測値が前フレームと比べて変化していればok
+        """
+        env = gym.make("Breakout-v0")
+        env = FireResetEnv(env)
+        pre_observation = env.reset()
+        observation, _, _, _ = env.step(0)
+        self.assertFalse((observation == pre_observation).all())
 
 if __name__ == '__main__':
     unittest.main()
