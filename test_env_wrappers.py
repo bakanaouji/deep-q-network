@@ -1,6 +1,7 @@
 import unittest
 import gym
-from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84
+import numpy as np
+from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack
 
 class TestEnvWrappers(unittest.TestCase):
 
@@ -41,6 +42,20 @@ class TestEnvWrappers(unittest.TestCase):
         env = gym.make("PongNoFrameskip-v4")
         env = ProcessFrame84(env)
         observation = env.reset()
+
+    def test_frame_stack(self):
+        """
+        スタックするフレーム数分だけ次元数が増加していればok
+        """
+        k = 4
+        env = gym.make("PongNoFrameskip-v4")
+        expected_observation_shape = (env.observation_space.shape[0], env.observation_space.shape[1], env.observation_space.shape[2] * k)
+        env = FrameStack(env, k)
+        observation = env.reset()
+        self.assertEqual(expected_observation_shape, np.array(observation).shape)
+        self.assertEqual(env.observation_space.shape, np.array(observation).shape)
+        observation, _, _, _ = env.step(0)
+        self.assertEqual(env.observation_space.shape, np.array(observation).shape)
 
 if __name__ == '__main__':
     unittest.main()

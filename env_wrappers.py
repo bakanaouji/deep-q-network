@@ -76,3 +76,36 @@ class ProcessFrame84(gym.ObservationWrapper):
         x_t = resized_screen[18:102, :]
         x_t = np.reshape(x_t, [84, 84, 1])
         return x_t.astype(np.uint8)
+
+class FrameStack(gym.Wrapper):
+    def __init__(self, env, k):
+        gym.Wrapper.__init__(self, env)
+        self.k = k
+        self.frames = deque([], maxlen=k)
+        shp = env.observation_space.shape
+        self.observation_space = spaces.Box(low=0, high=255, shape=(shp[0], shp[1], shp[2] * k))
+
+    def _reset(self):
+        observation = self.env.reset()
+        for _ in range(self.k):
+            self.frames.append(observation)
+        return self._get_observation()
+
+    def _step(self, action):
+        observation, reward, done, info = self.env.step(action)
+        self.frames.append(observation)
+        return self._get_observation(), reward, done, info
+
+    def _get_observation(self):
+        assert len(self.frames) == self.k
+        return LazyFrames(list(self.frames))
+
+class LazyFrames(object):
+    def __init__(self, frames):
+        self._frames = frames
+
+    def __array__(self, dtype=None):
+        out = np.concatenate(self._frames, axis=2)
+        if dtype is not None:
+            out = out.astype(dtype)
+        return out
