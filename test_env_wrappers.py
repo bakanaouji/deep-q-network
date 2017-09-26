@@ -1,7 +1,7 @@
 import unittest
 import gym
 import numpy as np
-from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack
+from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack, ClippedRewardsWrapper
 
 class TestEnvWrappers(unittest.TestCase):
 
@@ -56,6 +56,14 @@ class TestEnvWrappers(unittest.TestCase):
         self.assertEqual(env.observation_space.shape, np.array(observation).shape)
         observation, _, _, _ = env.step(0)
         self.assertEqual(env.observation_space.shape, np.array(observation).shape)
+
+    def test_clipped_rewards_wrapper(self):
+        env = gym.make("PongNoFrameskip-v4")
+        env = ClippedRewardsWrapper(env)
+        env.reset()
+        _, reward, _, _ = env.step(0)
+        self.assertLessEqual(reward, 1.0)
+        self.assertGreaterEqual(reward, -1.0)
 
 if __name__ == '__main__':
     unittest.main()

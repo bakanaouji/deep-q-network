@@ -109,3 +109,7 @@ class LazyFrames(object):
         if dtype is not None:
             out = out.astype(dtype)
         return out
+
+class ClippedRewardsWrapper(gym.RewardWrapper):
+    def _reward(self, reward):
+        return np.sign(reward)
