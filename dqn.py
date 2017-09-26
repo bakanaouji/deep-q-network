@@ -9,7 +9,6 @@ from skimage.transform import resize
 from keras.layers import Conv2D, Flatten, Dense
 from keras.models import Sequential
 
-
 class DQN():
     def __init__(self, **params):
         self.env_name = params['env_name']

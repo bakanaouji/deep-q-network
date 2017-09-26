@@ -1,6 +1,6 @@
 import unittest
 import gym
-from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv
+from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84
 
 class TestEnvWrappers(unittest.TestCase):
 
@@ -33,6 +33,14 @@ class TestEnvWrappers(unittest.TestCase):
         pre_observation = env.reset()
         observation, _, _, _ = env.step(0)
         self.assertFalse((observation == pre_observation).all())
+
+    def test_process_frame84(self):
+        """
+        cv2で画像を保存してみて，グレースケールならok
+        """
+        env = gym.make("PongNoFrameskip-v4")
+        env = ProcessFrame84(env)
+        observation = env.reset()
 
 if __name__ == '__main__':
     unittest.main()
