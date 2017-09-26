@@ -113,3 +113,7 @@ class LazyFrames(object):
 class ClippedRewardsWrapper(gym.RewardWrapper):
     def _reward(self, reward):
         return np.sign(reward)
+
+class ScaledFloatFrame(gym.ObservationWrapper):
+    def _observation(self, observation):
+        return np.array(observation).astype(np.float32) / 255.0
