@@ -1,7 +1,7 @@
 import unittest
 import gym
 import numpy as np
-from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack, ClippedRewardsWrapper, ScaledFloatFrame, EpisodicLifeEnv
+from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack, ClippedRewardsWrapper, ScaledFloatFrame, EpisodicLifeEnv, wrap_dqn
 
 class TestEnvWrappers(unittest.TestCase):
 
@@ -90,9 +90,13 @@ class TestEnvWrappers(unittest.TestCase):
         while True:
             _, _, done, _ = env.step(1)
             if done:
-                # print("End")
                 env.reset()
-            # env.render()
+                break
+            env.render()
+
+    def test_wrap_dqn(self):
+        env = gym.make("PongNoFrameskip-v4")
+        env = wrap_dqn(env)
 
 
 if __name__ == '__main__':

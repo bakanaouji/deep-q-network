@@ -146,8 +146,8 @@ class EpisodicLifeEnv(gym.Wrapper):
 
 def wrap_dqn(env):
     env = EpisodicLifeEnv(env)
-    env = NoopResetEnv(env, noop_max=30)
-    env = MaxAndSkipEnv(env, skip=4)
+    env = NoopResetEnv(env, no_op_max=30)
+    env = MaxAndSkipEnv(env, action_repeat=4)
     if 'FIRE' in env.unwrapped.get_action_meanings():
         env = FireResetEnv(env)
     env = ProcessFrame84(env)
