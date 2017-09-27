@@ -5,8 +5,41 @@ import numpy as np
 from collections import deque
 from gym import spaces
 
+class EpisodicLifeEnv(gym.Wrapper):
+    def __init__(self, env=None):
+        """
+        1エピソード=1ライフにする．
+        """
+        super(EpisodicLifeEnv, self).__init__(env)
+        self.lives = 0
+        self.was_real_done = True
+        self.was_real_reset = False
+
+    def _step(self, action):
+        obs, reward, done, info = self.env.step(action)
+        self.was_real_done = done
+        lives = self.env.unwrapped.ale.lives()
+        if lives < self.lives and lives > 0:
+            done = True
+        self.lives = lives
+        return obs, reward, done, info
+
+    def _reset(self):
+        if self.was_real_done:
+            obs = self.env.reset()
+            self.was_real_reset = True
+        else:
+            obs, _, _, _ = self.env.step(0)
+            self.was_real_reset = False
+        self.lives = self.env.unwrapped.ale.lives()
+        return obs
+
 class NoopResetEnv(gym.Wrapper):
     def __init__(self, env, no_op_max):
+        """
+        エピソードの開始時に数フレーム何もしない行動を取り，
+        初期状態を決定する．
+        """
         super(NoopResetEnv, self).__init__(env)
         self.no_op_max = no_op_max
 
@@ -23,6 +56,10 @@ class NoopResetEnv(gym.Wrapper):
 
 class MaxAndSkipEnv(gym.Wrapper):
     def __init__(self, env, action_repeat):
+        """
+        1回行動を取ると，同じ行動を指定フレーム分続ける．
+        指定数分行動を繰り返したら，直前のフレームの観測との最大値を状態として返す．
+        """
         super(MaxAndSkipEnv, self).__init__(env)
         self.observation_buffer = deque(maxlen=2)
         self.action_repeat = action_repeat
@@ -43,6 +80,10 @@ class MaxAndSkipEnv(gym.Wrapper):
 
 class FireResetEnv(gym.Wrapper):
     def __init__(self, env):
+        """
+        行動"Fire"を取らないと開始しないゲームの場合，
+        最初に"Fire"を実行してゲームを開始させる．
+        """
         super(FireResetEnv, self).__init__(env)
 
     def _reset(self):
@@ -57,6 +98,9 @@ class FireResetEnv(gym.Wrapper):
 
 class ProcessFrame84(gym.ObservationWrapper):
     def __init__(self, env=None):
+        """
+        観測した画面を(84,84)サイズのグレースケール画像に変換．
+        """
         super(ProcessFrame84, self).__init__(env)
         self.observation_space = spaces.Box(low=0, high=255, shape=(84, 84, 1))
 
@@ -79,6 +123,9 @@ class ProcessFrame84(gym.ObservationWrapper):
 
 class FrameStack(gym.Wrapper):
     def __init__(self, env, k):
+        """
+        指定したフレーム数分の観測の履歴を状態とする．
+        """
         gym.Wrapper.__init__(self, env)
         self.k = k
         self.frames = deque([], maxlen=k)
@@ -112,37 +159,17 @@ class LazyFrames(object):
 
 class ClippedRewardsWrapper(gym.RewardWrapper):
     def _reward(self, reward):
+        """
+        報酬が正なら+1に，負なら-1に，0なら0とする．
+        """
         return np.sign(reward)
 
 class ScaledFloatFrame(gym.ObservationWrapper):
     def _observation(self, observation):
+        """
+        状態を255で割って正規化する
+        """
         return np.array(observation).astype(np.float32) / 255.0
-
-class EpisodicLifeEnv(gym.Wrapper):
-    def __init__(self, env=None):
-        super(EpisodicLifeEnv, self).__init__(env)
-        self.lives = 0
-        self.was_real_done = True
-        self.was_real_reset = False
-
-    def _step(self, action):
-        obs, reward, done, info = self.env.step(action)
-        self.was_real_done = done
-        lives = self.env.unwrapped.ale.lives()
-        if lives < self.lives and lives > 0:
-            done = True
-        self.lives = lives
-        return obs, reward, done, info
-
-    def _reset(self):
-        if self.was_real_done:
-            obs = self.env.reset()
-            self.was_real_reset = True
-        else:
-            obs, _, _, _ = self.env.step(0)
-            self.was_real_reset = False
-        self.lives = self.env.unwrapped.ale.lives()
-        return obs
 
 def wrap_dqn(env):
     env = EpisodicLifeEnv(env)
@@ -153,4 +180,5 @@ def wrap_dqn(env):
     env = ProcessFrame84(env)
     env = FrameStack(env, 4)
     env = ClippedRewardsWrapper(env)
+    env = ScaledFloatFrame(env)
     return env
