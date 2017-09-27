@@ -117,3 +117,40 @@ class ClippedRewardsWrapper(gym.RewardWrapper):
 class ScaledFloatFrame(gym.ObservationWrapper):
     def _observation(self, observation):
         return np.array(observation).astype(np.float32) / 255.0
+
+class EpisodicLifeEnv(gym.Wrapper):
+    def __init__(self, env=None):
+        super(EpisodicLifeEnv, self).__init__(env)
+        self.lives = 0
+        self.was_real_done = True
+        self.was_real_reset = False
+
+    def _step(self, action):
+        obs, reward, done, info = self.env.step(action)
+        self.was_real_done = done
+        lives = self.env.unwrapped.ale.lives()
+        if lives < self.lives and lives > 0:
+            done = True
+        self.lives = lives
+        return obs, reward, done, info
+
+    def _reset(self):
+        if self.was_real_done:
+            obs = self.env.reset()
+            self.was_real_reset = True
+        else:
+            obs, _, _, _ = self.env.step(0)
+            self.was_real_reset = False
+        self.lives = self.env.unwrapped.ale.lives()
+        return obs
+
+def wrap_dqn(env):
+    env = EpisodicLifeEnv(env)
+    env = NoopResetEnv(env, noop_max=30)
+    env = MaxAndSkipEnv(env, skip=4)
+    if 'FIRE' in env.unwrapped.get_action_meanings():
+        env = FireResetEnv(env)
+    env = ProcessFrame84(env)
+    env = FrameStack(env, 4)
+    env = ClippedRewardsWrapper(env)
+    return env
