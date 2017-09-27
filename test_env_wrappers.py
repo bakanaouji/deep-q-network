@@ -1,7 +1,7 @@
 import unittest
 import gym
 import numpy as np
-from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack, ClippedRewardsWrapper, ScaledFloatFrame
+from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack, ClippedRewardsWrapper, ScaledFloatFrame, EpisodicLifeEnv
 
 class TestEnvWrappers(unittest.TestCase):
 
@@ -77,6 +77,23 @@ class TestEnvWrappers(unittest.TestCase):
         observation = env.reset()
         self.assertTrue((observation <= 1.0).all())
         self.assertTrue((observation >= 0.0).all())
+
+    def test_episodic_life_env(self):
+        """
+        Breakoutなどのライフがあるゲームで，
+        1ライフ失う毎にエピソードが終わったことになっていればok
+        テストしたい場合，コメントアウト外してください
+        """
+        env = gym.make("BreakoutNoFrameskip-v4")
+        env = EpisodicLifeEnv(env)
+        env.reset()
+        while True:
+            _, _, done, _ = env.step(1)
+            if done:
+                # print("End")
+                env.reset()
+            # env.render()
+
 
 if __name__ == '__main__':
     unittest.main()
