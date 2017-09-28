@@ -13,7 +13,7 @@ class TestModel(unittest.TestCase):
         frame_height = 84
         s, q_values, q_network = model.init_q_network(num_actions, agent_history_length, frame_width, frame_height)
         s_shape = s.get_shape().as_list()
-        self.assertEqual(s_shape, [None, agent_history_length, frame_width, frame_height])
+        self.assertEqual(s_shape, [1, agent_history_length, frame_width, frame_height])
         q_values_shape = q_values.get_shape().as_list()
         self.assertEqual(q_values_shape, [None, num_actions])
         plot_model(q_network, show_shapes=True, show_layer_names=True, to_file='model.png')

@@ -130,7 +130,7 @@ class FrameStack(gym.Wrapper):
         self.k = k
         self.frames = deque([], maxlen=k)
         shp = env.observation_space.shape
-        self.observation_space = spaces.Box(low=0, high=255, shape=(shp[0], shp[1], shp[2] * k))
+        self.observation_space = spaces.Box(low=0, high=255, shape=(k * shp[2], shp[0], shp[1]))
 
     def _reset(self):
         observation = self.env.reset()
@@ -153,6 +153,7 @@ class LazyFrames(object):
 
     def __array__(self, dtype=None):
         out = np.concatenate(self._frames, axis=2)
+        out = out.transpose(2, 0, 1)
         if dtype is not None:
             out = out.astype(dtype)
         return out

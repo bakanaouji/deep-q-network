@@ -29,7 +29,7 @@ def init_q_network(num_actions, agent_history_length, frame_width, frame_height)
     model.add(Dense(512, activation='relu'))
     model.add(Dense(num_actions))
     s = tf.placeholder(
-        tf.float32,[None, agent_history_length, frame_width, frame_height]
+        tf.float32,[1, agent_history_length, frame_width, frame_height]
         )
     q_values = model(s)
 

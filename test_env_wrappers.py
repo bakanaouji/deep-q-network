@@ -66,7 +66,7 @@ class TestEnvWrappers(unittest.TestCase):
         """
         k = 4
         env = gym.make("BreakoutNoFrameskip-v4")
-        expected_observation_shape = (env.observation_space.shape[0], env.observation_space.shape[1], env.observation_space.shape[2] * k)
+        expected_observation_shape = (k * env.observation_space.shape[2], env.observation_space.shape[0], env.observation_space.shape[1])
         env = FrameStack(env, k)
         observation = env.reset()
         self.assertEqual(expected_observation_shape, np.array(observation).shape)
@@ -134,13 +134,13 @@ class TestEnvWrappers(unittest.TestCase):
         # 5 : ProcessFrame84テスト
         # cv2で画像を保存してみて，グレースケールならok
         observation = env.reset()
-        cv2.imwrite("test_wrap_dqn.png", observation[:,:,0] * 255)
+        cv2.imwrite("test_wrap_dqn.png", observation[0] * 255)
         # 6 : FrameStackテスト
         # スタックするフレーム数分だけ次元数が増加していればok
         observation = env.reset()
-        self.assertEqual((84, 84, 4), np.array(observation).shape)
+        self.assertEqual((4, 84, 84), np.array(observation).shape)
         observation, _, _, _ = env.step(0)
-        self.assertEqual((84, 84, 4), np.array(observation).shape)
+        self.assertEqual((4, 84, 84), np.array(observation).shape)
         # 7 : ClippedRewardsWrapperテスト
         # 報酬が-1~1の間に入っていればok
         env.reset()

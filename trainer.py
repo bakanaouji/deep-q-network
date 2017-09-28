@@ -12,6 +12,8 @@ class Trainer(object):
         self.squared_gradient_momuntum = params['squared_gradient_momuntum']
         self.min_squared_gradient = params['min_squared_gradient']
         self.initial_exploration = params['initial_exploration']
+        self.final_exploration = params['final_exploration']
+        self.final_exploration_frame = params['final_exploration_frame']
         self.replay_memory_size = params['replay_memory_size']
         self.frame_width = params['frame_width']
         self.frame_height = params['frame_height']
@@ -96,3 +98,7 @@ class Trainer(object):
             while not done:
                 # ε-greedyに従って行動を選択
                 action = self.choose_action_by_epsilon_greedy(self.env.action_space.n, s, q_values, epsilon, observation)
+                # εを線形減少
+                epsilon = max(self.final_exploration,
+                                    epsilon - (
+                                    self.initial_exploration - self.final_exploration) / self.final_exploration_frame)
