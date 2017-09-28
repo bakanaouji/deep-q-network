@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 
 from replay_memory import ReplayMemory
@@ -10,10 +11,12 @@ class Trainer(object):
         self.gradient_momentum = params['gradient_momentum']
         self.squared_gradient_momuntum = params['squared_gradient_momuntum']
         self.min_squared_gradient = params['min_squared_gradient']
+        self.initial_exploration = params['initial_exploration']
         self.replay_memory_size = params['replay_memory_size']
         self.frame_width = params['frame_width']
         self.frame_height = params['frame_height']
         self.agent_history_length = params['agent_history_length']
+        self.tmax = params['tmax']
         
     def build_training_op(self, num_actions, q_values, q_network_weights):
         a = tf.placeholder(tf.int64, [None])  # 行動
@@ -36,6 +39,14 @@ class Trainer(object):
                 var_list=q_network_weights)  # 誤差最小化
 
         return a, y, loss, grad_update
+
+    def choose_action_by_epsilon_greedy(self, action_num, s, q_values, epsilon, observation):
+        if epsilon >= np.random.rand():
+            action = np.random.randint(action_num)
+        else:
+            action = np.argmax(q_values.eval(
+                feed_dict={s: [observation]}))
+        return action
 
     def train(self):
         # Replay Memory
@@ -62,3 +73,26 @@ class Trainer(object):
 
         # 変数の初期化（Q Networkの初期化）
         sess.run(tf.global_variables_initializer())
+
+        # Target Networkの初期化
+        sess.run(assign_target_network)
+
+        t = 0
+        episode = 0
+        epsilon = self.initial_exploration
+
+        # メインループ
+        while t < self.tmax:
+            # エピソード実行
+            episode += 1
+            duration = 0
+            total_reward = 0.0
+            total_q_max = 0.0
+            total_loss = 0
+            done = False
+            # 環境初期化
+            observation = self.env.reset()
+            # エピソード終了まで実行
+            while not done:
+                # ε-greedyに従って行動を選択
+                action = self.choose_action_by_epsilon_greedy(self.env.action_space.n, s, q_values, epsilon, observation)
