@@ -11,6 +11,7 @@ def init_q_network(num_actions, agent_history_length, frame_width, frame_height)
         q_values: Q-Networkの出力
         model: Q-Networkのモデル
     """
+    # @todo 初期化方法を指定
     model = Sequential()
     model.add(
             Conv2D(
