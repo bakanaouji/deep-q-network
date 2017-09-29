@@ -40,10 +40,7 @@ class Trainer(object):
         # 誤差関数
         loss = tf.reduce_mean(tf.square(quadratic_part))
         # 最適化手法を定義
-        optimizer = tf.train.RMSPropOptimizer(self.learning_rate,
-                momentum=self.gradient_momentum,
-                decay=self.squared_gradient_momuntum,
-                epsilon=self.min_squared_gradient)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
         # 誤差最小化の処理
         grad_update = optimizer.minimize(loss, var_list=q_func.model.trainable_weights)
 
