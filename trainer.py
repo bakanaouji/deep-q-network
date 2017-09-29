@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from replay_memory import ReplayMemory
-from model import init_q_network
+from model import CNN
 
 class Trainer(object):
     def __init__(self, env, **params):
@@ -25,37 +25,39 @@ class Trainer(object):
         self.minibatch_size = params['minibatch_size']
         self.target_network_update_frequency = params['target_network_update_frequency']
         
-    def build_training_op(self, num_actions, q_values, q_network_weights):
-        a = tf.placeholder(tf.int64, [None])  # 行動
-        y = tf.placeholder(tf.float32, [None])  # 教師信号
-
-        a_one_hot = tf.one_hot(a, num_actions, 1.0,
-                0.0)  # 行動をone hot vectorに変換する
-        q_value = tf.reduce_sum(tf.multiply(q_values, a_one_hot),
-                reduction_indices=1)  # 行動のQ値の計算
+    def build_training_op(self, num_actions, q_func):
+        # 行動
+        a = tf.placeholder(tf.int64, [None])
+        # 教師信号
+        y = tf.placeholder(tf.float32, [None])
+        # 行動をone hot vectorに変換する
+        a_one_hot = tf.one_hot(a, num_actions, 1.0, 0.0)
+        # 行動のQ値の計算
+        q_value = tf.reduce_sum(tf.multiply(q_func.q_values, a_one_hot), reduction_indices=1)
         # エラークリップ
         error = y - q_value
         quadratic_part = tf.clip_by_value(error, -1.0, 1.0)
-        loss = tf.reduce_mean(tf.square(quadratic_part))  # 誤差関数
-
+        # 誤差関数
+        loss = tf.reduce_mean(tf.square(quadratic_part))
+        # 最適化手法を定義
         optimizer = tf.train.RMSPropOptimizer(self.learning_rate,
                 momentum=self.gradient_momentum,
                 decay=self.squared_gradient_momuntum,
-                epsilon=self.min_squared_gradient)  # 最適化手法を定義
-        grad_update = optimizer.minimize(loss,
-                var_list=q_network_weights)  # 誤差最小化
+                epsilon=self.min_squared_gradient)
+        # 誤差最小化の処理
+        grad_update = optimizer.minimize(loss, var_list=q_func.model.trainable_weights)
 
         return a, y, loss, grad_update
 
-    def choose_action_by_epsilon_greedy(self, action_num, s, q_values, epsilon, observation):
+    def choose_action_by_epsilon_greedy(self, action_num, q_func, epsilon, observation):
         if epsilon >= np.random.rand():
             action = np.random.randint(action_num)
         else:
-            action = np.argmax(q_values.eval(
-                feed_dict={s: [observation]}))
+            action = np.argmax(q_func.q_values.eval(
+                feed_dict={q_func.s: [observation]}))
         return action
 
-    def learn(self, sess, s, a, y, loss, grad_update, replay_memory, target_q_values, target_s):
+    def learn(self, sess, q_func, a, y, loss, grad_update, replay_memory, target_func):
         state_batch = []
         action_batch = []
         reward_batch = []
@@ -75,8 +77,8 @@ class Trainer(object):
         done_batch = np.array(done_batch) + 0
 
         # Target Networkで次の状態でのQ値を計算
-        target_q_values_batch = target_q_values.eval(
-            feed_dict={target_s: np.float32(np.array(
+        target_q_values_batch = target_func.q_values.eval(
+            feed_dict={target_func.s: np.float32(np.array(
                 next_state_batch))})
         # 教師信号を計算
         y_batch = reward_batch + (
@@ -85,7 +87,7 @@ class Trainer(object):
             axis=1)
         # 勾配法による誤差最小化
         l, _ = sess.run([loss, grad_update], feed_dict={
-            s: np.float32(np.array(state_batch)),
+            q_func.s: np.float32(np.array(state_batch)),
             a: action_batch,
             y: y_batch
         })
@@ -96,12 +98,12 @@ class Trainer(object):
         replay_memory = ReplayMemory(self.replay_memory_size)
 
         # Q-Network
-        s, q_values, q_network = init_q_network(self.env.action_space.n, self.agent_history_length, self.frame_width, self.frame_height)
-        q_network_weights = q_network.trainable_weights # 学習される重み
+        q_func = CNN(self.env.action_space.n, self.agent_history_length, self.frame_width, self.frame_height)
+        q_network_weights = q_func.model.trainable_weights # 学習される重み
 
         # TargetNetwork
-        target_s, target_q_values, target_network = init_q_network(self.env.action_space.n, self.agent_history_length, self.frame_width, self.frame_height)
-        target_network_weights = target_network.trainable_weights  # 重みのリスト
+        target_func = CNN(self.env.action_space.n, self.agent_history_length, self.frame_width, self.frame_height)
+        target_network_weights = target_func.model.trainable_weights  # 重みのリスト
 
         # 定期的にTargetNetworkをQ-Networkで同期する処理
         assign_target_network = [
@@ -109,7 +111,7 @@ class Trainer(object):
                 i in range(len(target_network_weights))]
 
         # 誤差関数や最適化のための処理
-        a, y, loss, grad_update = self.build_training_op(self.env.action_space.n, q_values, q_network_weights)
+        a, y, loss, grad_update = self.build_training_op(self.env.action_space.n, q_func)
 
         # Sessionの構築
         sess = tf.InteractiveSession()
@@ -140,7 +142,7 @@ class Trainer(object):
                 # 前の状態を保存
                 pre_observation = observation.copy()
                 # ε-greedyに従って行動を選択
-                action = self.choose_action_by_epsilon_greedy(self.env.action_space.n, s, q_values, epsilon, observation)
+                action = self.choose_action_by_epsilon_greedy(self.env.action_space.n, q_func, epsilon, observation)
                 # 行動を実行し，報酬と次の画面とdoneを観測
                 observation, reward, done, info = self.env.step(action)
                 # replay memoryに(s_t,a_t,r_t,s_{t+1},done)を追加
@@ -152,12 +154,12 @@ class Trainer(object):
                                     epsilon - (1.0 - self.final_exploration) / self.final_exploration_frame)
                 if t > self.replay_start_size and t % self.learn_frequency:
                     # Q-Networkの学習
-                    total_loss += self.learn(sess, s, a, y, loss, grad_update, replay_memory, target_q_values, target_s)
+                    total_loss += self.learn(sess, q_func, a, y, loss, grad_update, replay_memory, target_func)
                 if t % (self.target_network_update_frequency) == 0:
                     # Target Networkの更新
                     sess.run(assign_target_network)
                 total_reward += reward
-                total_q_max += np.max(q_values.eval(
-                    feed_dict={s: [observation]}))
+                total_q_max += np.max(q_func.q_values.eval(
+                    feed_dict={q_func.s: [observation]}))
                 t += 1
                 duration += 1
