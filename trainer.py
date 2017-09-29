@@ -3,6 +3,7 @@ import tensorflow as tf
 
 from replay_memory import ReplayMemory
 from model import CNN
+from util.linear_schedule import LinearSchedule
 
 class Trainer(object):
     def __init__(self, env, **params):
@@ -15,13 +16,10 @@ class Trainer(object):
         self.learning_rate = params['learning_rate']
         self.tmax = params['tmax']
         self.replay_memory_size = params['replay_memory_size']
-        self.final_exploration_frame = params['final_exploration_frame']
+        self.exploration_fraction = params['exploration_fraction']
         self.final_exploration = params['final_exploration']
         self.learn_frequency = params['learn_frequency']
         self.discount_factor = params['discount_factor']
-        self.gradient_momentum = params['gradient_momentum']
-        self.squared_gradient_momuntum = params['squared_gradient_momuntum']
-        self.min_squared_gradient = params['min_squared_gradient']
         self.minibatch_size = params['minibatch_size']
         self.target_network_update_frequency = params['target_network_update_frequency']
         
@@ -121,7 +119,9 @@ class Trainer(object):
 
         t = 0
         episode = 0
-        epsilon = 1.0
+        epsilon = LinearSchedule(schedule_timesteps=int(self.exploration_fraction * self.tmax),
+                                initial_p=1.0,
+                                final_p=self.final_exploration)
 
         # メインループ
         while t < self.tmax:
@@ -139,16 +139,13 @@ class Trainer(object):
                 # 前の状態を保存
                 pre_observation = observation.copy()
                 # ε-greedyに従って行動を選択
-                action = self.choose_action_by_epsilon_greedy(self.env.action_space.n, q_func, epsilon, observation)
+                action = self.choose_action_by_epsilon_greedy(self.env.action_space.n, q_func, epsilon.value(t), observation)
                 # 行動を実行し，報酬と次の画面とdoneを観測
                 observation, reward, done, info = self.env.step(action)
                 # replay memoryに(s_t,a_t,r_t,s_{t+1},done)を追加
                 # deepcopyになってるかな？？
                 replay_memory.add(pre_observation, action, reward, observation, done)
                 self.env.render()
-                # εを線形減少
-                epsilon = max(self.final_exploration,
-                                    epsilon - (1.0 - self.final_exploration) / self.final_exploration_frame)
                 if t > self.replay_start_size and t % self.learn_frequency:
                     # Q-Networkの学習
                     total_loss += self.learn(sess, q_func, a, y, loss, grad_update, replay_memory, target_func)
