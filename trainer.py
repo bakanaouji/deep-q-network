@@ -13,19 +13,17 @@ class Trainer(object):
         self.replay_start_size = params['replay_start_size']
 
         self.learning_rate = params['learning_rate']
+        self.tmax = params['tmax']
+        self.replay_memory_size = params['replay_memory_size']
+        self.final_exploration_frame = params['final_exploration_frame']
+        self.final_exploration = params['final_exploration']
+        self.learn_frequency = params['learn_frequency']
         self.discount_factor = params['discount_factor']
         self.gradient_momentum = params['gradient_momentum']
         self.squared_gradient_momuntum = params['squared_gradient_momuntum']
         self.min_squared_gradient = params['min_squared_gradient']
-        self.initial_exploration = params['initial_exploration']
-        self.final_exploration = params['final_exploration']
-        self.final_exploration_frame = params['final_exploration_frame']
-        self.replay_memory_size = params['replay_memory_size']
         self.minibatch_size = params['minibatch_size']
-        self.target_network_update_frequency = params[
-            'target_network_update_frequency']
-
-        self.tmax = params['tmax']
+        self.target_network_update_frequency = params['target_network_update_frequency']
         
     def build_training_op(self, num_actions, q_values, q_network_weights):
         a = tf.placeholder(tf.int64, [None])  # 行動
@@ -124,7 +122,7 @@ class Trainer(object):
 
         t = 0
         episode = 0
-        epsilon = self.initial_exploration
+        epsilon = 1.0
 
         # メインループ
         while t < self.tmax:
@@ -151,9 +149,8 @@ class Trainer(object):
                 self.env.render()
                 # εを線形減少
                 epsilon = max(self.final_exploration,
-                                    epsilon - (
-                                    self.initial_exploration - self.final_exploration) / self.final_exploration_frame)
-                if t > self.replay_start_size:
+                                    epsilon - (1.0 - self.final_exploration) / self.final_exploration_frame)
+                if t > self.replay_start_size and t % self.learn_frequency:
                     # Q-Networkの学習
                     total_loss += self.learn(sess, s, a, y, loss, grad_update, replay_memory, target_q_values, target_s)
                 if t % (self.target_network_update_frequency) == 0:
