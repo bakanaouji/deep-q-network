@@ -27,7 +27,7 @@ def main():
 
     trainer = Trainer(env, **params)
     # 学習実行
-    trainer.train()
+    trainer.learn()
 
 if __name__ == '__main__':
     main()

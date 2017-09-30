@@ -24,6 +24,8 @@ class Trainer(object):
         self.target_network_update_frequency = params['target_network_update_frequency']
         
     def build_training_op(self, num_actions, q_func):
+        """
+        """
         # 行動
         a = tf.placeholder(tf.int64, [None])
         # 教師信号
@@ -52,7 +54,7 @@ class Trainer(object):
                 feed_dict={q_func.s: [observation]}))
         return action
 
-    def learn(self, sess, q_func, a, y, loss, grad_update, replay_memory, target_func):
+    def train(self, sess, q_func, a, y, loss, grad_update, replay_memory, target_func):
         state_batch = []
         action_batch = []
         reward_batch = []
@@ -88,7 +90,7 @@ class Trainer(object):
         })
         return l
 
-    def train(self):
+    def learn(self):
         # Replay Memory
         replay_memory = ReplayMemory(self.replay_memory_size)
 
@@ -148,7 +150,7 @@ class Trainer(object):
                 self.env.render()
                 if t > self.replay_start_size and t % self.learn_frequency:
                     # Q-Networkの学習
-                    total_loss += self.learn(sess, q_func, a, y, loss, grad_update, replay_memory, target_func)
+                    total_loss += self.train(sess, q_func, a, y, loss, grad_update, replay_memory, target_func)
                 if t % (self.target_network_update_frequency) == 0:
                     # Target Networkの更新
                     sess.run(assign_target_network)
