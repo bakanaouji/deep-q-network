@@ -173,15 +173,13 @@ class Trainer(object):
         # Q-Network
         q_func = CNN(self.env.action_space.n, self.agent_history_length, self.frame_width, self.frame_height)
         q_network_weights = q_func.model.trainable_weights # 学習される重み
-
         # TargetNetwork
         target_func = CNN(self.env.action_space.n, self.agent_history_length, self.frame_width, self.frame_height)
         target_network_weights = target_func.model.trainable_weights  # 重みのリスト
 
         # 定期的にTargetNetworkをQ-Networkで同期する処理
         assign_target_network = [
-                target_network_weights[i].assign(q_network_weights[i]) for
-                i in range(len(target_network_weights))]
+                target_network_weights[i].assign(q_network_weights[i]) for i in range(len(target_network_weights))]
 
         # 誤差関数や最適化のための処理
         a, y, loss, grad_update = self.build_training_op(self.env.action_space.n, q_func)
