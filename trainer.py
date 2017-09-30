@@ -7,6 +7,16 @@ from util.linear_schedule import LinearSchedule
 
 class Trainer(object):
     def __init__(self, env, **params):
+        """
+        学習を行うTrainerを構築．
+
+        Parameters
+        ----------
+        env: gym.env
+            open ai gymの環境
+        **params: {}
+            学習に必要なパラメータのリスト
+        """
         self.env = env
         self.frame_width = params['frame_width']
         self.frame_height = params['frame_height']
@@ -25,6 +35,25 @@ class Trainer(object):
         
     def build_training_op(self, num_actions, q_func):
         """
+        学習に必要な処理の構築．
+
+        Parameters
+        ----------
+        num_actions: int
+            環境の行動数
+        q_func: model.CNN
+            Q関数
+
+        Returns
+        ----------
+        a: tf.placeholder(tf.int64, [None])
+            エージェントが選択する行動値
+        y: tf.placeholder(tf.float32, [None])
+            教師信号．Q^*関数のQ値．
+        loss:
+            誤差関数．yとの誤差．
+        grad_update:
+            誤差を最小化する処理
         """
         # 行動
         a = tf.placeholder(tf.int64, [None])
@@ -46,15 +75,58 @@ class Trainer(object):
 
         return a, y, loss, grad_update
 
-    def choose_action_by_epsilon_greedy(self, action_num, q_func, epsilon, observation):
+    def choose_action_by_epsilon_greedy(self, num_actions, q_func, epsilon, observation):
+        """
+        ε-greedyに従って行動を選択．
+
+        Parameters
+        ----------
+        num_actions: int
+            環境の行動数
+        q_func: model.CNN
+            Q関数
+        epsilon: float
+            ε．ランダムに行動を決定する確率．
+
+        Returns
+        ----------
+        action: int
+            選択した行動
+        """
         if epsilon >= np.random.rand():
-            action = np.random.randint(action_num)
+            action = np.random.randint(num_actions)
         else:
             action = np.argmax(q_func.q_values.eval(
                 feed_dict={q_func.s: [observation]}))
         return action
 
     def train(self, sess, q_func, a, y, loss, grad_update, replay_memory, target_func):
+        """
+        学習を実行．
+        @todo: open ai実装と比較．実装がかなり怪しい．
+
+        Parameters
+        ----------
+        sess:
+            tensorflowのセッション
+        q_func: model.CNN
+            Q関数
+        a: tf.placeholder(tf.int64, [None])
+            エージェントが選択する行動値
+        y: tf.placeholder(tf.float32, [None])
+            教師信号．Q^*関数のQ値．
+        loss:
+            誤差関数．yとの誤差．
+        grad_update:
+            誤差を最小化する処理
+        replay_memory: replay_memory.ReplayMemory
+            Replay Memory．このメモリからミニバッチして学習．
+            
+        Returns
+        ----------
+        l: float
+            教師信号との誤差
+        """
         state_batch = []
         action_batch = []
         reward_batch = []
@@ -82,7 +154,7 @@ class Trainer(object):
             1.0 - done_batch) * self.discount_factor * np.max(
             target_q_values_batch,
             axis=1)
-        # 勾配法による誤差最小化
+        # 誤差最小化
         l, _ = sess.run([loss, grad_update], feed_dict={
             q_func.s: np.float32(np.array(state_batch)),
             a: action_batch,
@@ -91,6 +163,10 @@ class Trainer(object):
         return l
 
     def learn(self):
+        """
+        mainメソッド．
+        DQNのアルゴリズムを回す．
+        """
         # Replay Memory
         replay_memory = ReplayMemory(self.replay_memory_size)
 
@@ -119,12 +195,13 @@ class Trainer(object):
         # Target Networkの初期化
         sess.run(assign_target_network)
 
-        t = 0
-        episode = 0
+        # ε．時間に対して線形で減少させる．
         epsilon = LinearSchedule(schedule_timesteps=int(self.exploration_fraction * self.tmax),
                                 initial_p=1.0,
                                 final_p=self.final_exploration)
 
+        t = 0
+        episode = 0
         # メインループ
         while t < self.tmax:
             # エピソード実行
