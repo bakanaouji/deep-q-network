@@ -12,7 +12,6 @@ class CNN(object):
             q_values: Q-Networkの出力
             model: Q-Networkのモデル
         """
-        # @todo 初期化方法を指定
         self.model = Sequential()
         self.model.add(
                 Conv2D(
