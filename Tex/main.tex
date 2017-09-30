@@ -27,7 +27,10 @@
 %%%% ↑algotithmic の \REQUIRE と \ENSURE の表記を変更する
 
 \begin{document}
-\begin{algorithm}[tb]
+
+\section{Deep Q Networkの擬似コード}
+以下，Deep Q Networkの擬似コード．
+\begin{algorithm}[htb]
 \caption{Deep Q-learning with experience replay}
 \label{alg:dqn}                          
 \begin{algorithmic}[1]   
@@ -63,7 +66,12 @@ r_j+\gamma\max_{a^{\prime}}Q^-(s_{j+1},a^{\prime};\theta^-) & (\mbox{otherwise})
 \end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[tb]
+
+\section{Atari Gamesの環境のラップ処理}
+Deep Q NetworkではAtari Gamesから受け取った状態の前処理などを行うことで学習をしやすくしている．
+以下にそれらの処理を示す．
+なお，$reset_{\mathrm{hoge}}()$は環境をリセットするときに呼ぶメソッドを，$step_{\mathrm{hoge}}(a_t)$は行動$a_t$を取って環境を更新するときに呼ぶメソッドを，$observe_{\mathrm{hoge}}()$は環境の状態を返すときに呼ばれるメソッドを，$reward_{\mathrm{hoge}}()$は報酬を返すときに呼ばれるメソッドを表す．
+\begin{algorithm}[htb]
 \caption{$reset_{\mathrm{noop}}()$}
 \label{alg:noop_reset}                          
 \begin{algorithmic}[1]   
