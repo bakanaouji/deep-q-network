@@ -64,50 +64,77 @@ r_j+\gamma\max_{a^{\prime}}Q^-(s_{j+1},a^{\prime};\theta^-) & (\mbox{otherwise})
 \end{algorithm}
 
 \begin{algorithm}[tb]
-\caption{Environment wrapping Atari Games}
-\label{alg:env}                          
+\caption{$reset_{\mathrm{noop}}()$}
+\label{alg:noop_reset}                          
 \begin{algorithmic}[1]   
-\REQUIRE $n_{\mathrm{batch}},n_{\mathrm{rmem}},l_{\mathrm{history}},f_{\mathrm{tnupdate}},\gamma,r_{\mathrm{learn}},m_{\mathrm{gradient}},m_{\mathrm{sgradient}},g_{\mathrm{min}},\epsilon_{\mathrm{first}},\epsilon_{\mathrm{final}},l_{\mathrm{expl}},n_{\mathrm{rpstart}},l_{\mathrm{nomax}}$
-\STATE Replay Memory$~D$を初期化
-\STATE Q-Network$~Q$をランダムな重み$\theta$で初期化
-\STATE Target network$~Q^-$を重み$\theta^-=\theta$で初期化
-\FOR{$\mathrm{episode}=1,\cdots,M$}
+\REQUIRE $env, l_{\mathrm{nomax}}$
+\STATE エピソードの開始時に，数フレーム何もしない行動を取り，初期状態を決定する．
 \STATE $T\sim U(1,l_{\mathrm{nomax}})$
 \FOR{$t^{\prime}=1,\cdots,T$}
-\STATE $a_t^{\prime}=(\mbox{do nothing})$の実行→初期状態の生成
+\STATE $a_{t^{\prime}}=(\mbox{do nothing})$の実行
 \ENDFOR
-\STATE $t=1$
-\WHILE{not $done$}
-\IF{$t\leq n_{\mathrm{rpstart}}$}
-\STATE $a_t$をランダムに決定→Replay Memoryの確保
-\ELSE
-\IF{$(t-1)\%l_{\mathrm{history}}=0$}
-\STATE ε-greedyに従って行動$a_t$を選択
-\ELSE
-\STATE $a_t=a_{t-1}$
-\ENDIF
-\STATE $\epsilon=\max{(\epsilon_{\mathrm{final}},\epsilon-\frac{\epsilon_{\mathrm{first}}-\epsilon_{\mathrm{final}}}{l_{\mathrm{expl}}})}$→εを線形減少
-\ENDIF
-\STATE 行動$a_t$を実行し，報酬$r_t$と次の画面$x_{t+1}$と$done$を観測
-\STATE 前処理して次の状態$s_{t+1}$を生成
-\STATE $D$に$(s_t,a_t,r_t,s_{t+1},done)$を追加，$|D|>n_{\mathrm{nmem}}$なら古いものを削除する．
-\IF{$t>n_{\mathrm{rpstart}}$}
-\IF{$(t-1)\%l_{\mathrm{history}}=0$}
-\STATE $D$からランダムに$(s_j,a_j,r_j,s_{j+1},done)$を$n_{\mathrm{batch}}$個の履歴をサンプル
-\STATE $y_j=
-\begin{cases}
-r_j & (done) \\
-r_j+\gamma\max_{a^{\prime}}Q^-(s_{j+1},a^{\prime};\theta^-) & (\mbox{otherwise})
-\end{cases}$
-\STATE $\theta$を$(y_j-Q(s_j,a_j;\theta))^2$の勾配方向にRMSProp$(r_{\mathrm{learn}},m_{\mathrm{gradient}},m_{\mathrm{sgradient}},g_{\mathrm{min}})$を用いて更新（勾配計算の後の更新の際，$r_j$は$[-1,1]$にクリップされる）
-\ENDIF
-\IF{$(t-1)\%(f_{\mathrm{tnupdate}}\times l_{\mathrm{history}})=0$}
-\STATE $Q^-=Q$
-\ENDIF
-\ENDIF
-\STATE $t=t+1$
-\ENDWHILE
+\ENSURE 初期状態が決定した環境$env$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[tb]
+\caption{$step_{\mathrm{repeat}}(a_t)$}
+\label{alg:max_and_skip}                          
+\begin{algorithmic}[1]   
+\REQUIRE $env, l_{\mathrm{history}}, a_t$
+\STATE 1回行動を取ると，同じ行動を指定フレーム続ける．指定数分行動を繰り返したら，直前のフレームの観測との最大値を状態として返す．
+\STATE ※$a_t$は選択したい行動とする．
+\STATE $r_{\mathrm{total}}=0$
+\FOR{$t^{\prime}=1,\cdots,l_{\mathrm{history}}$}
+\STATE $s_{\mathrm{prev}}=s_{t^{\prime}}$
+\STATE $a_{t^{\prime}}=a_t$として行動を選択し，環境$env$を更新，$(s_{t^{\prime}+1},r_{t^{\prime}}, done_{t^{\prime}})$を観測する．
+\STATE $r_{\mathrm{total}}=r_{\mathrm{total}}+r_{t^{\prime}}$
+\STATE $s_{\mathrm{max}}=\max(s_{\mathrm{prev}}, s_{t^{\prime}+1})$
+\STATE $done=done_{t^{\prime}}$
 \ENDFOR
+\ENSURE $s_{\mathrm{max}}, r_{\mathrm{total}}, done$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[tb]
+\caption{$observe_{\mathrm{gray84}}()$}
+\label{alg:process_frame84}                          
+\begin{algorithmic}[1]   
+\REQUIRE $s_t$
+\STATE 観測した画面を(84,84)サイズのグレースケール画像に変換して返す．
+\STATE $s_t$をグレースケール画像に変換
+\STATE 変換後の$s_t$をさらに(84,84)にreshape
+\ENSURE 変換後の$s_t$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[tb]
+\caption{$step_{\mathrm{stack}}(a_t)$}
+\label{alg:frame_stack}                          
+\begin{algorithmic}[1]   
+\REQUIRE $env, k, a_t, S$
+\STATE $k$ステップ数分の観測の履歴を状態として返す．
+\STATE $S$は観測の履歴とする．
+\STATE $a_t$を行動として選択し，環境$env$を更新，$(s_{t+1},r_t, done_t)$を観測する．
+\STATE $S$に$s_{t+1}$を追加．$|S|>k$なら，一番古い履歴を$S$から削除する．
+\ENSURE $S, r_t, done_t$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[tb]
+\caption{$reward_{\mathrm{clip}}()$}
+\label{alg:clipped_reward_wrapper}                          
+\begin{algorithmic}[1]   
+\REQUIRE $r_t$
+\STATE 報酬$r_t$が正なら$+1$に，負なら$-1$に，$0$なら$0$として返す．
+\IF{$r_t>0$}
+\STATE $r_t=1$
+\ELSIF{$r_t<0$}
+\STATE $r_t=-1$
+\ELSE
+\STATE $r_t=0$
+\ENDIF
+\ENSURE $r_t$
 \end{algorithmic}
 \end{algorithm}
 
