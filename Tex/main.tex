@@ -31,6 +31,42 @@
 \caption{Deep Q-learning with experience replay}
 \label{alg:dqn}                          
 \begin{algorithmic}[1]   
+\REQUIRE $r_{\mathrm{learn}},n_{\mathrm{rmem}},\epsilon_{\mathrm{final}},l_{\mathrm{expl}},f_{\mathrm{learn}},f_{\mathrm{update}},\gamma,n_{\mathrm{batch}}, M$
+\STATE Replay Memory$~D$を初期化
+\STATE Q-Network$~Q$をランダムな重み$\theta$で初期化
+\STATE Target network$~Q^-$を重み$\theta^-=\theta$で初期化
+\FOR{$\mathrm{episode}=1,\cdots,M$}
+\STATE $t=1$
+\WHILE{not $done$}
+\STATE ε-greedyに従って行動$a_t$を選択
+\STATE $\epsilon=\max{(\epsilon_{\mathrm{final}},\epsilon-\frac{1-\epsilon_{\mathrm{final}}}{l_{\mathrm{expl}}})}$→εを線形減少
+\STATE 行動$a_t$を実行し，報酬$r_t$と次の画面$x_{t+1}$と$done$を観測
+\STATE 前処理して次の状態$s_{t+1}$を生成
+\STATE $D$に$(s_t,a_t,r_t,s_{t+1},done)$を追加，$|D|>n_{\mathrm{nmem}}$なら古いものを削除する．
+\IF{$t>n_{\mathrm{rpstart}}$}
+\IF{$(t-1)\%f_{\mathrm{learn}}=0$}
+\STATE $D$からランダムに$(s_j,a_j,r_j,s_{j+1},done)$を$n_{\mathrm{batch}}$個の履歴をサンプル
+\STATE $y_j=
+\begin{cases}
+r_j & (done) \\
+r_j+\gamma\max_{a^{\prime}}Q^-(s_{j+1},a^{\prime};\theta^-) & (\mbox{otherwise})
+\end{cases}$
+\STATE $\theta$を$(y_j-Q(s_j,a_j;\theta))^2$の勾配方向に学習率$r_{\mathrm{learn}}$で更新（勾配計算の後の更新の際，$r_j$は$[-1,1]$にクリップされる）
+\ENDIF
+\IF{$(t-1)\%f_{\mathrm{update}}=0$}
+\STATE $Q^-=Q$
+\ENDIF
+\ENDIF
+\STATE $t=t+1$
+\ENDWHILE
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[tb]
+\caption{Environment wrapping Atari Games}
+\label{alg:env}                          
+\begin{algorithmic}[1]   
 \REQUIRE $n_{\mathrm{batch}},n_{\mathrm{rmem}},l_{\mathrm{history}},f_{\mathrm{tnupdate}},\gamma,r_{\mathrm{learn}},m_{\mathrm{gradient}},m_{\mathrm{sgradient}},g_{\mathrm{min}},\epsilon_{\mathrm{first}},\epsilon_{\mathrm{final}},l_{\mathrm{expl}},n_{\mathrm{rpstart}},l_{\mathrm{nomax}}$
 \STATE Replay Memory$~D$を初期化
 \STATE Q-Network$~Q$をランダムな重み$\theta$で初期化

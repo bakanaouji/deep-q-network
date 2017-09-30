@@ -14,7 +14,7 @@ def main():
     params['agent_history_length'] = 4  # Q_networkの入力として与える，直近のフレームの数
 
     # DQNのアルゴリズムのパラメータ
-    params['learning_rate'] = 1e-4  # RMSPropで使用される学習率
+    params['learning_rate'] = 1e-4  # 学習率
     params['tmax'] = 2000000  # 学習をやめる行動数
     params['replay_memory_size'] = 10000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
     params['exploration_fraction'] = 0.1  # εが初期値から最終値に線形減少するフレーム数．tmaxとの割合で決定．

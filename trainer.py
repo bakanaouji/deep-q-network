@@ -228,7 +228,7 @@ class Trainer(object):
                 if t > self.replay_start_size and t % self.learn_frequency:
                     # Q-Networkの学習
                     total_loss += self.train(sess, q_func, a, y, loss, grad_update, replay_memory, target_func)
-                if t % (self.target_network_update_frequency) == 0:
+                if t > self.replay_start_size and t % (self.target_network_update_frequency) == 0:
                     # Target Networkの更新
                     sess.run(assign_target_network)
                 total_reward += reward
