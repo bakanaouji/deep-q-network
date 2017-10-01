@@ -234,3 +234,14 @@ class Trainer(object):
                     feed_dict={q_func.s: [observation]}))
                 t += 1
                 duration += 1
+            if t < self.replay_start_size:
+                mode = 'random'
+            elif self.replay_start_size <= t < self.replay_start_size + self.exploration_fraction * self.tmax:
+                mode = 'explore'
+            else:
+                mode = 'exploit'
+            print(
+                'EPISODE: {0:6d} / TIMESTEP: {1:8d} / DURATION: {2:5d} / EPSILON: {3:.5f} / TOTAL_REWARD: {4:3.0f} / AVG_MAX_Q: {5:2.4f} / AVG_LOSS: {6:.5f} / MODE: {7}'.format(
+                    episode + 1, t, duration, epsilon.value(t),
+                    total_reward, total_q_max / float(duration),
+                    total_loss / float(duration), mode))
