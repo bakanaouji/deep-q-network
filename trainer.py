@@ -32,6 +32,8 @@ class Trainer(object):
         self.discount_factor = params['discount_factor']
         self.minibatch_size = params['minibatch_size']
         self.target_network_update_frequency = params['target_network_update_frequency']
+
+        self.render = params['render']
         
     def build_training_op(self, num_actions, q_func):
         """
@@ -222,7 +224,8 @@ class Trainer(object):
                 # replay memoryに(s_t,a_t,r_t,s_{t+1},done)を追加
                 # deepcopyになってるかな？？
                 replay_memory.add(pre_observation, action, reward, observation, done)
-                self.env.render()
+                if self.render:
+                    self.env.render()
                 if t > self.replay_start_size and t % self.learn_frequency:
                     # Q-Networkの学習
                     total_loss += self.train(sess, q_func, a, y, loss, grad_update, replay_memory, target_func)

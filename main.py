@@ -25,6 +25,9 @@ def main():
     params['discount_factor'] = 0.99  # Q_learningの更新で用いられる割引率γ
     params['minibatch_size'] = 32  # SGDによる更新に用いる訓練データの数
 
+    # 学習時の設定
+    params['render'] = False
+
     trainer = Trainer(env, **params)
     # 学習実行
     trainer.learn()
