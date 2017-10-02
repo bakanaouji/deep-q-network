@@ -4,6 +4,7 @@ import tensorflow as tf
 from replay_memory import ReplayMemory
 from model import CNN
 from util.linear_schedule import LinearSchedule
+from logger import save_sess
 
 class Trainer(object):
     def __init__(self, env, **params):
@@ -232,6 +233,8 @@ class Trainer(object):
                 if t > self.replay_start_size and t % (self.target_network_update_frequency) == 0:
                     # Target Networkの更新
                     sess.run(assign_target_network)
+                if t > self.replay_start_size and t % (self.save_network_frequency) == 0:
+                    saver.save(sess, "saved_networks/model")
                 total_reward += reward
                 total_q_max += np.max(q_func.q_values.eval(
                     feed_dict={q_func.s: [observation]}))
