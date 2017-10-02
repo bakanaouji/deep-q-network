@@ -35,6 +35,7 @@ class Trainer(object):
         self.target_network_update_frequency = params['target_network_update_frequency']
 
         self.render = params['render']
+        self.save_network_frequency = params['save_network_frequency']
         
     def build_training_op(self, num_actions, q_func):
         """
@@ -234,7 +235,7 @@ class Trainer(object):
                     # Target Networkの更新
                     sess.run(assign_target_network)
                 if t > self.replay_start_size and t % (self.save_network_frequency) == 0:
-                    saver.save(sess, "saved_networks/model")
+                    save_sess(sess, "saved_networks/model.ckpt", t)
                 total_reward += reward
                 total_q_max += np.max(q_func.q_values.eval(
                     feed_dict={q_func.s: [observation]}))
