@@ -4,7 +4,7 @@ import tensorflow as tf
 from replay_memory import ReplayMemory
 from model import CNN
 from util.linear_schedule import LinearSchedule
-from logger import save_sess
+from logger import save_sess, restore_sess
 
 class Trainer(object):
     def __init__(self, env, **params):
@@ -36,7 +36,7 @@ class Trainer(object):
 
         self.render = params['render']
         self.save_network_frequency = params['save_network_frequency']
-        
+
     def build_training_op(self, num_actions, q_func):
         """
         学習に必要な処理の構築．
@@ -249,6 +249,37 @@ class Trainer(object):
                 mode = 'exploit'
             print(
                 'EPISODE: {0:6d} / TIMESTEP: {1:8d} / DURATION: {2:5d} / EPSILON: {3:.5f} / TOTAL_REWARD: {4:3.0f} / AVG_MAX_Q: {5:2.4f} / AVG_LOSS: {6:.5f} / MODE: {7}'.format(
-                    episode + 1, t, duration, epsilon.value(t),
+                    episode, t, duration, epsilon.value(t),
                     total_reward, total_q_max / float(duration),
                     total_loss / float(duration), mode))
+
+    def test(self):
+        # Q-Network
+        q_func = CNN(self.env.action_space.n, self.agent_history_length, self.frame_width, self.frame_height)
+        # Sessionの構築
+        sess = tf.InteractiveSession()
+        restore_sess(sess, "saved_networks/model.ckpt")
+        t = 0
+        episode = 0
+        # メインループ
+        while t < self.tmax:
+            # エピソード実行
+            episode += 1
+            duration = 0
+            total_reward = 0.0
+            done = False
+            # 環境初期化
+            observation = self.env.reset()
+            # エピソード終了まで実行
+            while not done:
+                # 行動を選択
+                action = self.choose_action_by_epsilon_greedy(self.env.action_space.n, q_func, 0.0, observation)
+                # 行動を実行し，報酬と次の画面とdoneを観測
+                observation, reward, done, info = self.env.step(action)
+                self.env.render()
+                total_reward += reward
+                t += 1
+                duration += 1
+            print('EPISODE: {0:6d} / TIMESTEP: {1:8d} / DURATION: {2:5d} / TOTAL_REWARD: {3:3.0f}'.format(
+                    episode, t, duration, total_reward))
+
