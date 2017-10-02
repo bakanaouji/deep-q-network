@@ -29,6 +29,6 @@ class CNN(object):
         self.model.add(Dense(512, activation='relu'))
         self.model.add(Dense(num_actions))
         self.s = tf.placeholder(
-                tf.float32,[None, agent_history_length, frame_width, frame_height]
+                tf.float32, [None, agent_history_length, frame_width, frame_height]
                 )
         self.q_values = self.model(self.s)

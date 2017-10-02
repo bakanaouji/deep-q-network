@@ -26,9 +26,10 @@ def main():
     params['minibatch_size'] = 32  # SGDによる更新に用いる訓練データの数
 
     # 学習時の設定
-    params['test'] = True # テストさせるかどうか
+    params['test'] = False # テストさせるかどうか
     params['render'] = False # 描画をするかどうか
     params['save_network_frequency'] = 100000 # Q_networkを保存する頻度（フレーム数）
+    params['save_network_path'] = "saved_networks/model.ckpt"
 
     # 学習実行
     trainer = Trainer(env, **params)

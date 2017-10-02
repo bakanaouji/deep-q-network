@@ -4,7 +4,7 @@ import tensorflow as tf
 from replay_memory import ReplayMemory
 from model import CNN
 from util.linear_schedule import LinearSchedule
-from logger import save_sess, restore_sess
+from logger import save_sess, restore_sess, Logger
 
 class Trainer(object):
     def __init__(self, env, **params):
@@ -36,6 +36,7 @@ class Trainer(object):
 
         self.render = params['render']
         self.save_network_frequency = params['save_network_frequency']
+        self.save_network_path = params['save_network_path']
 
     def build_training_op(self, num_actions, q_func):
         """
@@ -202,6 +203,9 @@ class Trainer(object):
                                 initial_p=1.0,
                                 final_p=self.final_exploration)
 
+        # Logger
+        logger = Logger(sess, "summary")
+
         t = 0
         episode = 0
         # メインループ
@@ -235,12 +239,15 @@ class Trainer(object):
                     # Target Networkの更新
                     sess.run(assign_target_network)
                 if t > self.replay_start_size and t % (self.save_network_frequency) == 0:
-                    save_sess(sess, "saved_networks/model.ckpt", t)
+                    save_sess(sess, self.save_network_path, t)
                 total_reward += reward
                 total_q_max += np.max(q_func.q_values.eval(
                     feed_dict={q_func.s: [observation]}))
                 t += 1
                 duration += 1
+            if t >= self.replay_start_size:
+                logger.write(sess, total_reward, total_q_max / float(duration),
+                             duration, total_loss / float(duration), episode)
             if t < self.replay_start_size:
                 mode = 'random'
             elif self.replay_start_size <= t < self.replay_start_size + self.exploration_fraction * self.tmax:
@@ -258,10 +265,12 @@ class Trainer(object):
         q_func = CNN(self.env.action_space.n, self.agent_history_length, self.frame_width, self.frame_height)
         # Sessionの構築
         sess = tf.InteractiveSession()
-        restore_sess(sess, "saved_networks/model.ckpt")
+        # session読み込み
+        restore_sess(sess, self.save_network_path)
+
+        # メインループ
         t = 0
         episode = 0
-        # メインループ
         while t < self.tmax:
             # エピソード実行
             episode += 1
