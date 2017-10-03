@@ -19,6 +19,7 @@ def restore_sess(sess, file_name):
 
 class Logger(object):
     def __init__(self, sess, file_name):
+        os.makedirs(os.path.dirname(file_name), exist_ok=True)
         episode_total_reward = tf.Variable(0.)
         tf.summary.scalar('Total Reward/Episode', episode_total_reward)
         episode_avg_max_q = tf.Variable(0.)
@@ -27,14 +28,16 @@ class Logger(object):
         tf.summary.scalar('Duration/Episode', episode_duration)
         episode_avg_loss = tf.Variable(0.)
         tf.summary.scalar('Average Loss/Episode', episode_avg_loss)
-        summary_vars = [episode_total_reward, episode_avg_max_q, episode_duration, episode_avg_loss]
+        total_step = tf.Variable(0.)
+        tf.summary.scalar('Total Step', total_step)
+        summary_vars = [episode_total_reward, episode_avg_max_q, episode_duration, episode_avg_loss, total_step]
         self.summary_placeholders = [tf.placeholder(tf.float32) for _ in range(len(summary_vars))]
         self.update_ops = [summary_vars[i].assign(self.summary_placeholders[i]) for i in range(len(summary_vars))]
         self.summary_op = tf.summary.merge_all()
         self.summary_writer = tf.summary.FileWriter(file_name, sess.graph)
 
-    def write(self, sess, total_reward, average_q_max, duration, average_loss, episode):
-        stats = [total_reward, average_q_max, duration, average_loss]
+    def write(self, sess, total_reward, average_q_max, duration, average_loss, t, episode):
+        stats = [total_reward, average_q_max, duration, average_loss, t]
         for i in range(len(stats)):
             sess.run(self.update_ops[i], feed_dict={
                 self.summary_placeholders[i]: float(stats[i])

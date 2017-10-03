@@ -37,6 +37,7 @@ class Trainer(object):
         self.render = params['render']
         self.save_network_frequency = params['save_network_frequency']
         self.save_network_path = params['save_network_path']
+        self.save_summary_path = params['save_summary_path']
 
     def build_training_op(self, num_actions, q_func):
         """
@@ -204,7 +205,7 @@ class Trainer(object):
                                 final_p=self.final_exploration)
 
         # Logger
-        logger = Logger(sess, "summary")
+        logger = Logger(sess, self.save_summary_path)
 
         t = 0
         episode = 0
@@ -247,7 +248,7 @@ class Trainer(object):
                 duration += 1
             if t >= self.replay_start_size:
                 logger.write(sess, total_reward, total_q_max / float(duration),
-                             duration, total_loss / float(duration), episode)
+                             duration, total_loss / float(duration), t, episode)
             if t < self.replay_start_size:
                 mode = 'random'
             elif self.replay_start_size <= t < self.replay_start_size + self.exploration_fraction * self.tmax:

@@ -4,11 +4,10 @@ from trainer import Trainer
 from env_wrappers import wrap_dqn
 
 def main():
-    env = gym.make("PongNoFrameskip-v4")
-    env = wrap_dqn(env)
     params = {}
 
     # 環境側のパラメータ
+    params['env_name'] = 'PongNoFrameskip-v4'
     params['frame_width'] = 84  # リサイズ後のフレーム幅
     params['frame_height'] = 84  # リサイズ後のフレーム高さ
     params['agent_history_length'] = 4  # Q_networkの入力として与える，直近のフレームの数
@@ -29,7 +28,11 @@ def main():
     params['test'] = False # テストさせるかどうか
     params['render'] = False # 描画をするかどうか
     params['save_network_frequency'] = 100000 # Q_networkを保存する頻度（フレーム数）
-    params['save_network_path'] = "saved_networks/model.ckpt"
+    params['save_network_path'] = 'saved_networks/' + params['env_name'] +  '/model.ckpt'
+    params['save_summary_path'] = 'summary/' + params['env_name']
+
+    env = gym.make('PongNoFrameskip-v4')
+    env = wrap_dqn(env)
 
     # 学習実行
     trainer = Trainer(env, **params)
