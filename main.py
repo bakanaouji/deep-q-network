@@ -21,7 +21,7 @@ def main():
     params['final_exploration'] = 0.01  # ε-greedyにおけるεの最終値
     params['learn_frequency'] = 4   # この行動回数ごとに学習
     params['replay_start_size'] = 10000  # 学習を始める前に，このフレーム数に対して一様ランダムに行動を選択する政策が実行され，その経験がReplay memoryに蓄えられる
-    params['target_network_update_frequency'] = 1000  # target_networkが更新される頻度（パラメータの更新頻度数で計測）
+    params['target_network_update_frequency'] = 1000  # target_networkが更新される頻度（フレーム数）
     params['discount_factor'] = 0.99  # Q_learningの更新で用いられる割引率γ
     params['minibatch_size'] = 32  # SGDによる更新に用いる訓練データの数
 
