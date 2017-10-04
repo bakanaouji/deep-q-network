@@ -54,3 +54,4 @@ summary
 
 # python
 __pycache__
+*.pyc
