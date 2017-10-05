@@ -15,7 +15,7 @@ def main():
     # DQNのアルゴリズムのパラメータ
     params['learning_rate'] = 1e-4  # 学習率
     params['tmax'] = 2000000  # 学習をやめる行動数
-    params['replay_memory_size'] = 10000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
+    params['replay_memory_size'] = 32  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
     params['exploration_fraction'] = 0.1  # εが初期値から最終値に線形減少するフレーム数．tmaxとの割合で決定．
     params['final_exploration'] = 0.01  # ε-greedyにおけるεの最終値
     params['learn_frequency'] = 4   # この行動回数ごとに学習
@@ -28,8 +28,8 @@ def main():
     params['test'] = False # テストさせるかどうか
     params['render'] = False # 描画をするかどうか
     params['save_network_frequency'] = 100000 # Q_networkを保存する頻度（フレーム数）
-    params['save_network_path'] = 'saved_networks/' + params['env_name'] +  '/model.ckpt'
-    params['save_summary_path'] = 'summary/' + params['env_name']
+    params['save_network_path'] = 'saved_networks/' + params['env_name'] +  '_without_replay_memory/model.ckpt'
+    params['save_summary_path'] = 'summary/' + params['env_name'] + '_without_replay_memory'
 
     env = gym.make('PongNoFrameskip-v4')
     env = wrap_dqn(env)
