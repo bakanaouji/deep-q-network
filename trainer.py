@@ -71,9 +71,9 @@ class Trainer(object):
         q_value = tf.reduce_sum(tf.multiply(q_func.q_values, a_one_hot), reduction_indices=1)
         # エラークリップ
         error = y - q_value
-        loss = tf.where(tf.abs(error) < 1.0, tf.square(error) * 0.5, tf.abs(error) - 0.5)
+        errors = tf.where(tf.abs(error) < 1.0, tf.square(error) * 0.5, tf.abs(error) - 0.5)
         # 誤差関数
-        loss = tf.reduce_mean(loss)
+        loss = tf.reduce_mean(errors)
         # 最適化手法を定義
         optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
         # 誤差最小化の処理
