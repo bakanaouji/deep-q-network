@@ -7,7 +7,7 @@ def main():
     params = {}
 
     # 環境側のパラメータ
-    params['env_name'] = 'PongNoFrameskip-v4'
+    params['env_name'] = 'BreakoutNoFrameskip-v4'
     params['frame_width'] = 84  # リサイズ後のフレーム幅
     params['frame_height'] = 84  # リサイズ後のフレーム高さ
 
@@ -19,7 +19,7 @@ def main():
     params['final_exploration'] = 0.01  # ε-greedyにおけるεの最終値
     params['learn_frequency'] = 4   # この行動回数ごとに学習
     params['replay_start_size'] = 10000  # 学習を始める前に，このフレーム数に対して一様ランダムに行動を選択する政策が実行され，その経験がReplay memoryに蓄えられる
-    params['target_network_update_frequency'] = 4  # target_networkが更新される頻度（フレーム数）
+    params['target_network_update_frequency'] = 1000  # target_networkが更新される頻度（フレーム数）
     params['discount_factor'] = 0.99  # Q_learningの更新で用いられる割引率γ
     params['minibatch_size'] = 32  # SGDによる更新に用いる訓練データの数
     params['agent_history_length'] = 4  # Q_networkの入力として与える，直近のフレームの数
@@ -28,10 +28,10 @@ def main():
     params['test'] = False # テストさせるかどうか
     params['render'] = False # 描画をするかどうか
     params['save_network_frequency'] = 100000 # Q_networkを保存する頻度（フレーム数）
-    params['save_network_path'] = 'saved_networks/' + params['env_name'] + '_without_target_network/model.ckpt'
-    params['save_summary_path'] = 'summary/' + params['env_name'] + '_without_target_network'
+    params['save_network_path'] = 'saved_networks/' + params['env_name'] + '/model.ckpt'
+    params['save_summary_path'] = 'summary/' + params['env_name'] + ''
 
-    env = gym.make('PongNoFrameskip-v4')
+    env = gym.make(params['env_name'])
     env = wrap_dqn(env, params['agent_history_length'])
 
     # 学習実行

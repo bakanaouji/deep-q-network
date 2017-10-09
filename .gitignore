@@ -42,7 +42,7 @@ bin
 #Log
 log
 saved_networks
-summary
+# summary
 
 #tex
 *.aux
