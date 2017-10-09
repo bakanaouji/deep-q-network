@@ -54,7 +54,7 @@
 r_j & (done) \\
 r_j+\gamma\max_{a^{\prime}}Q^-(s_{j+1},a^{\prime};\theta^-) & (\mbox{otherwise})
 \end{cases}$
-\STATE $\theta$を$(y_j-Q(s_j,a_j;\theta))^2$の勾配方向に学習率$r_{\mathrm{learn}}$で更新（勾配計算の後の更新の際，$r_j$は$[-1,1]$にクリップされる）
+\STATE $\theta$を$y_j-Q(s_j,a_j;\theta)$を最小化する方向に学習率$r_{\mathrm{learn}}$で更新（損失関数にはHuber損失関数を用いる．）
 \ENDIF
 \IF{$(t-1)\%f_{\mathrm{update}}=0$}
 \STATE $Q^-=Q$
