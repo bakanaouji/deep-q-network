@@ -34,7 +34,7 @@
 \caption{Deep Q-learning with experience replay}
 \label{alg:dqn}                          
 \begin{algorithmic}[1]   
-\REQUIRE $r_{\mathrm{learn}},n_{\mathrm{rmem}},\epsilon_{\mathrm{final}},l_{\mathrm{expl}},f_{\mathrm{learn}},f_{\mathrm{update}},\gamma,n_{\mathrm{batch}}, M$
+\REQUIRE $r_{\mathrm{learn}},n_{\mathrm{rmem}},\epsilon_{\mathrm{init}},\epsilon_{\mathrm{final}},l_{\mathrm{expl}},n_{\mathrm{rpstart}},f_{\mathrm{learn}},f_{\mathrm{update}},\gamma,n_{\mathrm{batch}}, M$
 \STATE Replay Memory$~D$を初期化
 \STATE Q-Network$~Q$をランダムな重み$\theta$で初期化
 \STATE Target network$~Q^-$を重み$\theta^-=\theta$で初期化
@@ -42,7 +42,7 @@
 \STATE $t=1$
 \WHILE{not $done$}
 \STATE ε-greedyに従って行動$a_t$を選択
-\STATE $\epsilon=\max{(\epsilon_{\mathrm{final}},\epsilon-\frac{1-\epsilon_{\mathrm{final}}}{l_{\mathrm{expl}}})}$→εを線形減少
+\STATE $\epsilon=\max{(\epsilon_{\mathrm{final}},\epsilon-\frac{\epsilon_{\mathrm{init}}-\epsilon_{\mathrm{final}}}{l_{\mathrm{expl}}})}$→εを線形減少
 \STATE 行動$a_t$を実行し，報酬$r_t$と次の画面$x_{t+1}$と$done$を観測
 \STATE 前処理して次の状態$s_{t+1}$を生成
 \STATE $D$に$(s_t,a_t,r_t,s_{t+1},done)$を追加，$|D|>n_{\mathrm{nmem}}$なら古いものを削除する．
@@ -54,7 +54,7 @@
 r_j & (done) \\
 r_j+\gamma\max_{a^{\prime}}Q^-(s_{j+1},a^{\prime};\theta^-) & (\mbox{otherwise})
 \end{cases}$
-\STATE $\theta$を$(y_j-Q(s_j,a_j;\theta))^2$の勾配方向に学習率$r_{\mathrm{learn}}$で更新（勾配計算の後の更新の際，$r_j$は$[-1,1]$にクリップされる）
+\STATE $\theta$を$y_j-Q(s_j,a_j;\theta)$を最小化する方向に学習率$r_{\mathrm{learn}}$で更新（損失関数にはHuber損失関数を用いる．）
 \ENDIF
 \IF{$(t-1)\%f_{\mathrm{update}}=0$}
 \STATE $Q^-=Q$
@@ -89,11 +89,11 @@ Deep Q NetworkではAtari Gamesから受け取った状態の前処理などを�
 \caption{$step_{\mathrm{repeat}}(a_t)$}
 \label{alg:max_and_skip}                          
 \begin{algorithmic}[1]   
-\REQUIRE $env, l_{\mathrm{history}}, a_t$
+\REQUIRE $env, l_{\mathrm{repeat}}, a_t$
 \STATE 1回行動を取ると，同じ行動を指定フレーム続ける．指定数分行動を繰り返したら，直前のフレームの観測との最大値を状態として返す．
 \STATE ※$a_t$は選択したい行動とする．
 \STATE $r_{\mathrm{total}}=0$
-\FOR{$t^{\prime}=1,\cdots,l_{\mathrm{history}}$}
+\FOR{$t^{\prime}=1,\cdots,l_{\mathrm{repeat}}$}
 \STATE $s_{\mathrm{prev}}=s_{t^{\prime}}$
 \STATE $a_{t^{\prime}}=a_t$として行動を選択し，環境$env$を更新，$(s_{t^{\prime}+1},r_{t^{\prime}}, done_{t^{\prime}})$を観測する．
 \STATE $r_{\mathrm{total}}=r_{\mathrm{total}}+r_{t^{\prime}}$
@@ -120,11 +120,11 @@ Deep Q NetworkではAtari Gamesから受け取った状態の前処理などを�
 \caption{$step_{\mathrm{stack}}(a_t)$}
 \label{alg:frame_stack}                          
 \begin{algorithmic}[1]   
-\REQUIRE $env, k, a_t, S$
-\STATE $k$ステップ数分の観測の履歴を状態として返す．
+\REQUIRE $env, l_{\mathrm{history}}, a_t, S$
+\STATE $l_{\mathrm{history}}$ステップ数分の観測の履歴を状態として返す．
 \STATE $S$は観測の履歴とする．
 \STATE $a_t$を行動として選択し，環境$env$を更新，$(s_{t+1},r_t, done_t)$を観測する．
-\STATE $S$に$s_{t+1}$を追加．$|S|>k$なら，一番古い履歴を$S$から削除する．
+\STATE $S$に$s_{t+1}$を追加．$|S|>l_{\mathrm{history}}$なら，一番古い履歴を$S$から削除する．
 \ENSURE $S, r_t, done_t$
 \end{algorithmic}
 \end{algorithm}
