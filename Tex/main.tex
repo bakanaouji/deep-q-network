@@ -34,12 +34,12 @@
 \caption{Deep Q-learning with experience replay}
 \label{alg:dqn}                          
 \begin{algorithmic}[1]   
-\REQUIRE $r_{\mathrm{learn}},n_{\mathrm{rmem}},\epsilon_{\mathrm{init}},\epsilon_{\mathrm{final}},l_{\mathrm{expl}},n_{\mathrm{rpstart}},f_{\mathrm{learn}},f_{\mathrm{update}},\gamma,n_{\mathrm{batch}}, M$
+\REQUIRE $r_{\mathrm{learn}},n_{\mathrm{rmem}},\epsilon_{\mathrm{init}},\epsilon_{\mathrm{final}},l_{\mathrm{expl}},n_{\mathrm{rpstart}},f_{\mathrm{learn}},f_{\mathrm{update}},\gamma,n_{\mathrm{batch}}, T$
 \STATE Replay Memory$~D$を初期化
 \STATE Q-Network$~Q$をランダムな重み$\theta$で初期化
 \STATE Target network$~Q^-$を重み$\theta^-=\theta$で初期化
-\FOR{$\mathrm{episode}=1,\cdots,M$}
 \STATE $t=1$
+\WHILE{$t<T$}
 \WHILE{not $done$}
 \STATE ε-greedyに従って行動$a_t$を選択
 \STATE $\epsilon=\max{(\epsilon_{\mathrm{final}},\epsilon-\frac{\epsilon_{\mathrm{init}}-\epsilon_{\mathrm{final}}}{l_{\mathrm{expl}}})}$→εを線形減少
@@ -62,7 +62,7 @@ r_j+\gamma\max_{a^{\prime}}Q^-(s_{j+1},a^{\prime};\theta^-) & (\mbox{otherwise})
 \ENDIF
 \STATE $t=t+1$
 \ENDWHILE
-\ENDFOR
+\ENDWHILE
 \end{algorithmic}
 \end{algorithm}
 
