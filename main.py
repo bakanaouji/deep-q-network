@@ -7,14 +7,14 @@ def main():
     params = {}
 
     # 環境側のパラメータ
-    params['env_name'] = 'BreakoutNoFrameskip-v4'
+    params['env_name'] = 'PongNoFrameskip-v4'
     params['frame_width'] = 84  # リサイズ後のフレーム幅
     params['frame_height'] = 84  # リサイズ後のフレーム高さ
 
     # DQNのアルゴリズムのパラメータ
     params['learning_rate'] = 1e-4  # 学習率
-    params['tmax'] = 10000000  # 学習をやめる行動数
-    params['replay_memory_size'] = 50000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
+    params['tmax'] = 2000000  # 学習をやめる行動数
+    params['replay_memory_size'] = 10000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
     params['exploration_fraction'] = 0.1  # εが初期値から最終値に線形減少するフレーム数．tmaxとの割合で決定．
     params['final_exploration'] = 0.01  # ε-greedyにおけるεの最終値
     params['learn_frequency'] = 4   # この行動回数ごとに学習
@@ -22,14 +22,15 @@ def main():
     params['target_network_update_frequency'] = 1000  # target_networkが更新される頻度（フレーム数）
     params['discount_factor'] = 0.99  # Q_learningの更新で用いられる割引率γ
     params['minibatch_size'] = 32  # SGDによる更新に用いる訓練データの数
-    params['agent_history_length'] = 4  # Q_networkの入力として与える，直近のフレームの数
+    params['agent_history_length'] = 1  # Q_networkの入力として与える，直近のフレームの数
 
     # 学習時の設定
     params['test'] = False # テストさせるかどうか
     params['render'] = False # 描画をするかどうか
     params['save_network_frequency'] = 100000 # Q_networkを保存する頻度（フレーム数）
-    params['save_network_path'] = 'saved_networks/' + params['env_name'] + '/model.ckpt'
-    params['save_summary_path'] = 'summary/' + params['env_name'] + ''
+    params['option_name'] = 'without_frame_stack25'
+    params['save_network_path'] = 'saved_networks/' + params['env_name'] + "_" + params['option_name'] + '/model.ckpt'
+    params['save_summary_path'] = 'summary/' + params['env_name'] + "_" + params['option_name']
 
     env = gym.make(params['env_name'])
     env = wrap_dqn(env, params['agent_history_length'])
