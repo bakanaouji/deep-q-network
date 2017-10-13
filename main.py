@@ -13,8 +13,8 @@ def main():
 
     # DQNのアルゴリズムのパラメータ
     params['learning_rate'] = 1e-4  # 学習率
-    params['tmax'] = 2000000  # 学習をやめる行動数
-    params['replay_memory_size'] = 10000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
+    params['tmax'] = 10000000  # 学習をやめる行動数
+    params['replay_memory_size'] = 50000  # SGDによる更新に用いるデータは，このサイズの直近のフレームデータからサンプルする
     params['exploration_fraction'] = 0.1  # εが初期値から最終値に線形減少するフレーム数．tmaxとの割合で決定．
     params['final_exploration'] = 0.01  # ε-greedyにおけるεの最終値
     params['learn_frequency'] = 4   # この行動回数ごとに学習
