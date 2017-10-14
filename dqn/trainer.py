@@ -1,10 +1,11 @@
 import numpy as np
 import tensorflow as tf
+from models.models import CNN
 
-from replay_memory import ReplayMemory
-from model import CNN
-from util.linear_schedule import LinearSchedule
-from logger import save_sess, restore_sess, Logger
+from dqn.replay_memory import ReplayMemory
+from util.log.logger import save_sess, restore_sess, Logger
+from util.schedules.linear_schedule import LinearSchedule
+
 
 class Trainer(object):
     def __init__(self, env, args):
@@ -13,7 +14,7 @@ class Trainer(object):
 
         Parameters
         ----------
-        env: gym.env
+        env: gym.envs
             open ai gymの環境
         args:
             学習に必要なパラメータのリスト
@@ -36,8 +37,8 @@ class Trainer(object):
 
         self.render = args.render
         self.save_network_freq = args.save_network_freq
-        self.save_network_path = args.save_network_path + "/" + args.env_name + "_normal"
-        self.save_summary_path = args.save_summary_path + "/" + args.env_name + "_normal"
+        self.save_network_path = "data/" + args.save_network_path + "/" + args.env_name + "_normal"
+        self.save_summary_path = "data/" + args.save_summary_path + "/" + args.env_name + "_normal"
 
     def build_training_op(self, num_actions, q_func):
         """

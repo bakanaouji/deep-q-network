@@ -182,13 +182,13 @@ class ScaledFloatFrame(gym.ObservationWrapper):
         return np.array(observation).astype(np.float32) / 255.0
 
 
-def wrap_dqn(env, history_len, action_repeat, no_op_max):
+def wrap_dqn(env, history_len=4, action_repeat=4, no_op_max=30):
     """
     DQN用に環境をラップする．
 
     Parameters
     ----------
-    env: gym.env
+    env: gym.envs
         gymの環境
     history_len: int
         このフレーム数分の観測の履歴を入力とする
@@ -200,7 +200,7 @@ def wrap_dqn(env, history_len, action_repeat, no_op_max):
 
     Returns
     ----------
-    env: gym.env
+    envs: gym.envs
         gym.envのラッパークラス
     """
     env = EpisodicLifeEnv(env)

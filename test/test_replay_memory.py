@@ -1,8 +1,9 @@
 import unittest
-from replay_memory import ReplayMemory
 
-class TestRelpayMemory(unittest.TestCase):
-    
+from dqn.replay_memory import ReplayMemory
+
+
+class TestReplayMemory(unittest.TestCase):
     def test_add(self):
         size = 5
         replay_memory = ReplayMemory(size)
@@ -28,6 +29,8 @@ class TestRelpayMemory(unittest.TestCase):
         for i in range(size):
             replay_memory.add(i, i + size, i + size * 2, i + size * 3, i + size * 4)
         sample = replay_memory.sample(sample_size)
+        print(sample)
+
 
 if __name__ == '__main__':
     unittest.main()

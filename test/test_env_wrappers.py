@@ -1,11 +1,15 @@
 import unittest
+
+import cv2
 import gym
 import numpy as np
-from env_wrappers import NoOpResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack, ClippedRewardsWrapper, ScaledFloatFrame, EpisodicLifeEnv, wrap_dqn
-import cv2
+
+from envs.env_wrappers import NoOpResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack, \
+    ClippedRewardsWrapper, \
+    ScaledFloatFrame, EpisodicLifeEnv, wrap_dqn
+
 
 class TestEnvWrappers(unittest.TestCase):
-
     def test_episodic_life_env(self):
         """
         Breakoutなどのライフがあるゲームで，
@@ -26,7 +30,7 @@ class TestEnvWrappers(unittest.TestCase):
         no_op_maxフレーム分だけ何もしてなければおｋ
         """
         env = gym.make("BreakoutNoFrameskip-v4")
-        env = NoOpResetEnv(env, noop_max=30)
+        env = NoOpResetEnv(env, no_op_max=30)
         env.reset()
 
     def test_max_and_skip_env(self):
@@ -58,7 +62,7 @@ class TestEnvWrappers(unittest.TestCase):
         env = gym.make("BreakoutNoFrameskip-v4")
         env = ProcessFrame84(env)
         observation = env.reset()
-        cv2.imwrite("test_process_frame84.png", observation[:,:,0] * 255)
+        cv2.imwrite("test_process_frame84.png", observation[:, :, 0] * 255)
 
     def test_frame_stack(self):
         """
@@ -66,7 +70,8 @@ class TestEnvWrappers(unittest.TestCase):
         """
         k = 4
         env = gym.make("BreakoutNoFrameskip-v4")
-        expected_observation_shape = (k * env.observation_space.shape[2], env.observation_space.shape[0], env.observation_space.shape[1])
+        expected_observation_shape = (
+            k * env.observation_space.shape[2], env.observation_space.shape[0], env.observation_space.shape[1])
         env = FrameStack(env, k)
         observation = env.reset()
         self.assertEqual(expected_observation_shape, np.array(observation).shape)
@@ -152,6 +157,7 @@ class TestEnvWrappers(unittest.TestCase):
         observation = env.reset()
         self.assertTrue((observation <= 1.0).all())
         self.assertTrue((observation >= 0.0).all())
+
 
 if __name__ == '__main__':
     unittest.main()

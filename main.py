@@ -1,8 +1,9 @@
-import gym
 import argparse
 
-from trainer import Trainer
-from env_wrappers import wrap_dqn
+import gym
+
+from dqn.trainer import Trainer
+from envs.env_wrappers import wrap_dqn
 
 
 def main():
