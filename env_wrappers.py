@@ -172,14 +172,14 @@ class ScaledFloatFrame(gym.ObservationWrapper):
         """
         return np.array(observation).astype(np.float32) / 255.0
 
-def wrap_dqn(env, agent_history_length=4):
+def wrap_dqn(env, history_len, action_repeat, noop_max):
     env = EpisodicLifeEnv(env)
-    env = NoopResetEnv(env, no_op_max=30)
-    env = MaxAndSkipEnv(env, action_repeat=4)
+    env = NoopResetEnv(env, noop_max)
+    env = MaxAndSkipEnv(env, action_repeat)
     if 'FIRE' in env.unwrapped.get_action_meanings():
         env = FireResetEnv(env)
     env = ProcessFrame84(env)
-    env = FrameStack(env, agent_history_length)
+    env = FrameStack(env, history_len)
     env = ClippedRewardsWrapper(env)
     env = ScaledFloatFrame(env)
     return env

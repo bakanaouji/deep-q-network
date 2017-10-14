@@ -7,7 +7,7 @@ from util.linear_schedule import LinearSchedule
 from logger import save_sess, restore_sess, Logger
 
 class Trainer(object):
-    def __init__(self, env, **params):
+    def __init__(self, env, args):
         """
         学習を行うTrainerを構築．
 
@@ -15,29 +15,29 @@ class Trainer(object):
         ----------
         env: gym.env
             open ai gymの環境
-        **params: {}
+        args:
             学習に必要なパラメータのリスト
         """
         self.env = env
-        self.frame_width = params['frame_width']
-        self.frame_height = params['frame_height']
-        self.agent_history_length = params['agent_history_length']
-        self.replay_start_size = params['replay_start_size']
+        self.width = args.width
+        self.height = args.height
 
-        self.learning_rate = params['learning_rate']
-        self.tmax = params['tmax']
-        self.replay_memory_size = params['replay_memory_size']
-        self.exploration_fraction = params['exploration_fraction']
-        self.final_exploration = params['final_exploration']
-        self.learn_frequency = params['learn_frequency']
-        self.discount_factor = params['discount_factor']
-        self.minibatch_size = params['minibatch_size']
-        self.target_network_update_frequency = params['target_network_update_frequency']
+        self.tmax = args.tmax
+        self.batch_size = args.batch_size
+        self.mem_size = args.mem_size
+        self.history_len = args.history_len
+        self.update_freq = args.update_freq
+        self.discount_fact = args.discount_fact
+        self.learn_freq = args.learn_freq
+        self.learn_rate = args.learn_rate
+        self.fin_expl = args.fin_expl
+        self.expl_frac = args.expl_frac
+        self.replay_st_size = args.replay_st_size
 
-        self.render = params['render']
-        self.save_network_frequency = params['save_network_frequency']
-        self.save_network_path = params['save_network_path']
-        self.save_summary_path = params['save_summary_path']
+        self.render = args.render
+        self.save_network_freq = args.save_network_freq
+        self.save_network_path = args.save_network_path + "/" + args.env_name + "_normal"
+        self.save_summary_path = args.save_summary_path + "/" + args.env_name + "_normal"
 
     def build_training_op(self, num_actions, q_func):
         """
@@ -75,7 +75,7 @@ class Trainer(object):
         # 誤差関数
         loss = tf.reduce_mean(errors)
         # 最適化手法を定義
-        optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.learn_rate)
         # 誤差最小化の処理
         grad_update = optimizer.minimize(loss, var_list=q_func.model.trainable_weights)
 
@@ -127,7 +127,7 @@ class Trainer(object):
             誤差を最小化する処理
         replay_memory: replay_memory.ReplayMemory
             Replay Memory．このメモリからミニバッチして学習．
-            
+
         Returns
         ----------
         l: float
@@ -139,9 +139,9 @@ class Trainer(object):
         next_state_batch = []
         done_batch = []
         # Replay Memoryからランダムにミニバッチをサンプル
-        minibatch = replay_memory.sample(self.minibatch_size)
+        batch = replay_memory.sample(self.batch_size)
 
-        for data in minibatch:
+        for data in batch:
             state_batch.append(data[0])
             action_batch.append(data[1])
             reward_batch.append(data[2])
@@ -157,7 +157,7 @@ class Trainer(object):
                 next_state_batch))})
         # 教師信号を計算
         y_batch = reward_batch + (
-            1.0 - done_batch) * self.discount_factor * np.max(
+            1.0 - done_batch) * self.discount_fact * np.max(
             target_q_values_batch,
             axis=1)
         # 誤差最小化
@@ -174,13 +174,13 @@ class Trainer(object):
         DQNのアルゴリズムを回す．
         """
         # Replay Memory
-        replay_memory = ReplayMemory(self.replay_memory_size)
+        replay_memory = ReplayMemory(self.mem_size)
 
         # Q-Network
-        q_func = CNN(self.env.action_space.n, self.agent_history_length, self.frame_width, self.frame_height)
+        q_func = CNN(self.env.action_space.n, self.history_len, self.width, self.height)
         q_network_weights = q_func.model.trainable_weights # 学習される重み
         # TargetNetwork
-        target_func = CNN(self.env.action_space.n, self.agent_history_length, self.frame_width, self.frame_height)
+        target_func = CNN(self.env.action_space.n, self.history_len, self.width, self.height)
         target_network_weights = target_func.model.trainable_weights  # 重みのリスト
 
         # 定期的にTargetNetworkをQ-Networkで同期する処理
@@ -200,9 +200,9 @@ class Trainer(object):
         sess.run(assign_target_network)
 
         # ε．時間に対して線形で減少させる．
-        epsilon = LinearSchedule(schedule_timesteps=int(self.exploration_fraction * self.tmax),
-                                initial_p=1.0,
-                                final_p=self.final_exploration)
+        epsilon = LinearSchedule(schedule_timesteps=int(self.expl_frac * self.tmax),
+                                 initial_p=1.0,
+                                 final_p=self.fin_expl)
 
         # Logger
         logger = Logger(sess, self.save_summary_path)
@@ -233,25 +233,25 @@ class Trainer(object):
                 replay_memory.add(pre_observation, action, reward, observation, done)
                 if self.render:
                     self.env.render()
-                if t > self.replay_start_size and t % self.learn_frequency:
+                if t > self.replay_st_size and t % self.learn_freq:
                     # Q-Networkの学習
                     total_loss += self.train(sess, q_func, a, y, loss, grad_update, replay_memory, target_func)
-                if t > self.replay_start_size and t % self.target_network_update_frequency == 0:
+                if t > self.replay_st_size and t % self.update_freq == 0:
                     # Target Networkの更新
                     sess.run(assign_target_network)
-                if t > self.replay_start_size and t % self.save_network_frequency == 0:
+                if t > self.replay_st_size and t % self.save_network_freq == 0:
                     save_sess(sess, self.save_network_path, t)
                 total_reward += reward
                 total_q_max += np.max(q_func.q_values.eval(
                     feed_dict={q_func.s: [observation]}))
                 t += 1
                 duration += 1
-            if t >= self.replay_start_size:
+            if t >= self.replay_st_size:
                 logger.write(sess, total_reward, total_q_max / float(duration),
                              duration, total_loss / float(duration), t, episode)
-            if t < self.replay_start_size:
+            if t < self.replay_st_size:
                 mode = 'random'
-            elif self.replay_start_size <= t < self.replay_start_size + self.exploration_fraction * self.tmax:
+            elif self.replay_st_size <= t < self.replay_st_size + self.expl_frac * self.tmax:
                 mode = 'explore'
             else:
                 mode = 'exploit'
@@ -263,7 +263,7 @@ class Trainer(object):
 
     def test(self):
         # Q-Network
-        q_func = CNN(self.env.action_space.n, self.agent_history_length, self.frame_width, self.frame_height)
+        q_func = CNN(self.env.action_space.n, self.history_len, self.width, self.height)
         # Sessionの構築
         sess = tf.InteractiveSession()
         # session読み込み

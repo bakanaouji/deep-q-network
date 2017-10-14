@@ -15,7 +15,6 @@ class ReplayMemory(object):
 
     def sample(self, minibatch_size):
         # Replay Memoryからランダムにミニバッチをサンプル
-        # @todo 非復元か復元か確認
         idxes = [np.random.randint(0, len(self._deque)) for _ in range(minibatch_size)]
         data = [self._deque[i] for i in idxes]
         return data
