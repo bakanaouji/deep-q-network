@@ -1,4 +1,6 @@
 import unittest
+import sys
+sys.path.append("../")
 
 from dqn.replay_memory import ReplayMemory
 

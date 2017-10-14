@@ -1,7 +1,8 @@
 import unittest
+import sys
+sys.path.append("../")
 
 from keras.utils.vis_utils import plot_model
-
 from models.models import CNN
 
 

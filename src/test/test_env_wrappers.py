@@ -3,10 +3,11 @@ import unittest
 import cv2
 import gym
 import numpy as np
+import sys
+sys.path.append("../")
 
 from envs.env_wrappers import NoOpResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack, \
-    ClippedRewardsWrapper, \
-    ScaledFloatFrame, EpisodicLifeEnv, wrap_dqn
+    ClippedRewardsWrapper, ScaledFloatFrame, EpisodicLifeEnv, wrap_dqn
 
 
 class TestEnvWrappers(unittest.TestCase):

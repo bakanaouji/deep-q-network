@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
-from models.models import CNN
 
 from dqn.replay_memory import ReplayMemory
+from models.models import CNN
 from util.log.logger import save_sess, restore_sess, Logger
 from util.schedules.linear_schedule import LinearSchedule
 
@@ -37,8 +37,8 @@ class Trainer(object):
 
         self.render = args.render
         self.save_network_freq = args.save_network_freq
-        self.save_network_path = "data/" + args.save_network_path + "/" + args.env_name + "_normal"
-        self.save_summary_path = "data/" + args.save_summary_path + "/" + args.env_name + "_normal"
+        self.save_network_path = "../data/" + args.save_network_path + "/" + args.env_name + "_normal"
+        self.save_summary_path = "../data/" + args.save_summary_path + "/" + args.env_name + "_normal"
 
     def build_training_op(self, num_actions, q_func):
         """
