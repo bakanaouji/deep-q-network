@@ -1,7 +1,7 @@
 import unittest
 import gym
 import numpy as np
-from env_wrappers import NoopResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack, ClippedRewardsWrapper, ScaledFloatFrame, EpisodicLifeEnv, wrap_dqn
+from env_wrappers import NoOpResetEnv, MaxAndSkipEnv, FireResetEnv, ProcessFrame84, FrameStack, ClippedRewardsWrapper, ScaledFloatFrame, EpisodicLifeEnv, wrap_dqn
 import cv2
 
 class TestEnvWrappers(unittest.TestCase):
@@ -26,7 +26,7 @@ class TestEnvWrappers(unittest.TestCase):
         no_op_maxフレーム分だけ何もしてなければおｋ
         """
         env = gym.make("BreakoutNoFrameskip-v4")
-        env = NoopResetEnv(env, no_op_max=30)
+        env = NoOpResetEnv(env, noop_max=30)
         env.reset()
 
     def test_max_and_skip_env(self):

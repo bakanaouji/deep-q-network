@@ -5,6 +5,7 @@ import numpy as np
 from collections import deque
 from gym import spaces
 
+
 class EpisodicLifeEnv(gym.Wrapper):
     def __init__(self, env=None):
         """
@@ -19,7 +20,7 @@ class EpisodicLifeEnv(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         self.was_real_done = done
         lives = self.env.unwrapped.ale.lives()
-        if lives < self.lives and lives > 0:
+        if self.lives > lives > 0:
             done = True
         self.lives = lives
         return obs, reward, done, info
@@ -34,25 +35,26 @@ class EpisodicLifeEnv(gym.Wrapper):
         self.lives = self.env.unwrapped.ale.lives()
         return obs
 
-class NoopResetEnv(gym.Wrapper):
+
+class NoOpResetEnv(gym.Wrapper):
     def __init__(self, env, no_op_max):
         """
         エピソードの開始時に数フレーム何もしない行動を取り，
         初期状態を決定する．
         """
-        super(NoopResetEnv, self).__init__(env)
+        super(NoOpResetEnv, self).__init__(env)
         self.no_op_max = no_op_max
 
     def _reset(self):
         self.env.reset()
         # ランダムなフレーム数分「何もしない」
-        T = np.random.randint(1, self.no_op_max + 1)
+        t = np.random.randint(1, self.no_op_max + 1)
         observation = None
-        for _ in range(T):
+        for _ in range(t):
             # 「何もしない」で，次の画面を返す
-            # @todo pongの場合，0：何もしない，1：何もしない，2：上，3：下なので修正が必要と思われる
             observation, _, _, _ = self.env.step(0)
         return observation
+
 
 class MaxAndSkipEnv(gym.Wrapper):
     def __init__(self, env, action_repeat):
@@ -67,6 +69,7 @@ class MaxAndSkipEnv(gym.Wrapper):
     def _step(self, action):
         total_reward = 0.0
         done = None
+        info = None
         for _ in range(self.action_repeat):
             observation, reward, done, info = self.env.step(action)
             self.observation_buffer.append(observation)
@@ -77,6 +80,7 @@ class MaxAndSkipEnv(gym.Wrapper):
         # 前のフレームの観測との最大値を状態として返す
         max_frame = np.max(np.stack(self.observation_buffer), axis=0)
         return max_frame, total_reward, done, info
+
 
 class FireResetEnv(gym.Wrapper):
     def __init__(self, env):
@@ -95,6 +99,7 @@ class FireResetEnv(gym.Wrapper):
         if done:
             self.env.reset()
         return observation
+
 
 class ProcessFrame84(gym.ObservationWrapper):
     def __init__(self, env=None):
@@ -120,6 +125,7 @@ class ProcessFrame84(gym.ObservationWrapper):
         x_t = resized_screen[18:102, :]
         x_t = np.reshape(x_t, [84, 84, 1])
         return x_t.astype(np.uint8)
+
 
 class FrameStack(gym.Wrapper):
     def __init__(self, env, k):
@@ -147,16 +153,18 @@ class FrameStack(gym.Wrapper):
         assert len(self.frames) == self.k
         return LazyFrames(list(self.frames))
 
+
 class LazyFrames(object):
     def __init__(self, frames):
         self._frames = frames
 
     def __array__(self, dtype=None):
         out = np.concatenate(self._frames, axis=2)
-        out = out.transpose(2, 0, 1)
+        out = out.transpose([2, 0, 1])
         if dtype is not None:
             out = out.astype(dtype)
         return out
+
 
 class ClippedRewardsWrapper(gym.RewardWrapper):
     def _reward(self, reward):
@@ -165,6 +173,7 @@ class ClippedRewardsWrapper(gym.RewardWrapper):
         """
         return np.sign(reward)
 
+
 class ScaledFloatFrame(gym.ObservationWrapper):
     def _observation(self, observation):
         """
@@ -172,9 +181,30 @@ class ScaledFloatFrame(gym.ObservationWrapper):
         """
         return np.array(observation).astype(np.float32) / 255.0
 
-def wrap_dqn(env, history_len, action_repeat, noop_max):
+
+def wrap_dqn(env, history_len, action_repeat, no_op_max):
+    """
+    DQN用に環境をラップする．
+
+    Parameters
+    ----------
+    env: gym.env
+        gymの環境
+    history_len: int
+        このフレーム数分の観測の履歴を入力とする
+    action_repeat: int
+        1回行動を取ると，同じ行動をこのフレーム分続ける．
+    no_op_max: int
+        エピソードの開始時にこのフレーム数分何もしない行動を取り，
+        初期状態を決定する．
+
+    Returns
+    ----------
+    env: gym.env
+        gym.envのラッパークラス
+    """
     env = EpisodicLifeEnv(env)
-    env = NoopResetEnv(env, noop_max)
+    env = NoOpResetEnv(env, no_op_max)
     env = MaxAndSkipEnv(env, action_repeat)
     if 'FIRE' in env.unwrapped.get_action_meanings():
         env = FireResetEnv(env)

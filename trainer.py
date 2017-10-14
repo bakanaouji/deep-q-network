@@ -52,13 +52,13 @@ class Trainer(object):
 
         Returns
         ----------
-        a: tf.placeholder(tf.int64, [None])
+        a: tf.python.framework.ops.Tensor(tf.int64, [None])
             エージェントが選択する行動値
-        y: tf.placeholder(tf.float32, [None])
+        y: tf.python.framework.ops.Tensor(tf.float32, [None])
             教師信号．Q^*関数のQ値．
-        loss:
+        loss: tf.python.framework.ops.Tensor
             誤差関数．yとの誤差．
-        grad_update:
+        grad_update: tf.python.framework.ops.Tensor
             誤差を最小化する処理
         """
         # 行動
@@ -81,7 +81,7 @@ class Trainer(object):
 
         return a, y, loss, grad_update
 
-    def choose_action_by_epsilon_greedy(self, num_actions, q_func, epsilon, observation):
+    def action(self, num_actions, q_func, epsilon, obs):
         """
         ε-greedyに従って行動を選択．
 
@@ -93,6 +93,8 @@ class Trainer(object):
             Q関数
         epsilon: float
             ε．ランダムに行動を決定する確率．
+        obs: np.ndarray
+            Q-Networkへの入力
 
         Returns
         ----------
@@ -103,34 +105,35 @@ class Trainer(object):
             action = np.random.randint(num_actions)
         else:
             action = np.argmax(q_func.q_values.eval(
-                feed_dict={q_func.s: [observation]}))
+                feed_dict={q_func.s: [obs]}))
         return action
 
-    def train(self, sess, q_func, a, y, loss, grad_update, replay_memory, target_func):
+    def train(self, sess, q_func, a, y, loss, grad_update, replay_mem, target_func):
         """
         学習を実行．
-        @todo: open ai実装と比較．実装がかなり怪しい．
 
         Parameters
         ----------
-        sess:
+        sess: tf.python.client.session.InteractiveSession
             tensorflowのセッション
         q_func: model.CNN
             Q関数
-        a: tf.placeholder(tf.int64, [None])
+        a: tf.python.framework.ops.Tensor(tf.int64, [None])
             エージェントが選択する行動値
-        y: tf.placeholder(tf.float32, [None])
+        y: tf.python.framework.ops.Tensor(tf.float32, [None])
             教師信号．Q^*関数のQ値．
-        loss:
+        loss: tf.python.framework.ops.Tensor
             誤差関数．yとの誤差．
-        grad_update:
+        grad_update: tf.python.framework.ops.Tensor
             誤差を最小化する処理
-        replay_memory: replay_memory.ReplayMemory
+        replay_mem: replay_memory.ReplayMemory
             Replay Memory．このメモリからミニバッチして学習．
+        target_func: model.CNN
+            Target Network
 
         Returns
         ----------
-        l: float
+        l: numpy.float32
             教師信号との誤差
         """
         state_batch = []
@@ -139,7 +142,7 @@ class Trainer(object):
         next_state_batch = []
         done_batch = []
         # Replay Memoryからランダムにミニバッチをサンプル
-        batch = replay_memory.sample(self.batch_size)
+        batch = replay_mem.sample(self.batch_size)
 
         for data in batch:
             state_batch.append(data[0])
@@ -174,11 +177,11 @@ class Trainer(object):
         DQNのアルゴリズムを回す．
         """
         # Replay Memory
-        replay_memory = ReplayMemory(self.mem_size)
+        replay_mem = ReplayMemory(self.mem_size)
 
         # Q-Network
         q_func = CNN(self.env.action_space.n, self.history_len, self.width, self.height)
-        q_network_weights = q_func.model.trainable_weights # 学習される重み
+        q_network_weights = q_func.model.trainable_weights  # 学習される重み
         # TargetNetwork
         target_func = CNN(self.env.action_space.n, self.history_len, self.width, self.height)
         target_network_weights = target_func.model.trainable_weights  # 重みのリスト
@@ -219,23 +222,22 @@ class Trainer(object):
             total_loss = 0
             done = False
             # 環境初期化
-            observation = self.env.reset()
+            obs = self.env.reset()
             # エピソード終了まで実行
             while not done:
                 # 前の状態を保存
-                pre_observation = observation.copy()
+                pre_observation = obs.copy()
                 # ε-greedyに従って行動を選択
-                action = self.choose_action_by_epsilon_greedy(self.env.action_space.n, q_func, epsilon.value(t), observation)
+                action = self.action(self.env.action_space.n, q_func, epsilon.value(t), obs)
                 # 行動を実行し，報酬と次の画面とdoneを観測
-                observation, reward, done, info = self.env.step(action)
+                obs, reward, done, info = self.env.step(action)
                 # replay memoryに(s_t,a_t,r_t,s_{t+1},done)を追加
-                # deepcopyになってるかな？？
-                replay_memory.add(pre_observation, action, reward, observation, done)
+                replay_mem.add(pre_observation, action, reward, obs, done)
                 if self.render:
                     self.env.render()
                 if t > self.replay_st_size and t % self.learn_freq:
                     # Q-Networkの学習
-                    total_loss += self.train(sess, q_func, a, y, loss, grad_update, replay_memory, target_func)
+                    total_loss += self.train(sess, q_func, a, y, loss, grad_update, replay_mem, target_func)
                 if t > self.replay_st_size and t % self.update_freq == 0:
                     # Target Networkの更新
                     sess.run(assign_target_network)
@@ -243,7 +245,7 @@ class Trainer(object):
                     save_sess(sess, self.save_network_path, t)
                 total_reward += reward
                 total_q_max += np.max(q_func.q_values.eval(
-                    feed_dict={q_func.s: [observation]}))
+                    feed_dict={q_func.s: [obs]}))
                 t += 1
                 duration += 1
             if t >= self.replay_st_size:
@@ -256,7 +258,8 @@ class Trainer(object):
             else:
                 mode = 'exploit'
             print(
-                'EPISODE: {0:6d} / TIMESTEP: {1:8d} / DURATION: {2:5d} / EPSILON: {3:.5f} / TOTAL_REWARD: {4:3.0f} / AVG_MAX_Q: {5:2.4f} / AVG_LOSS: {6:.5f} / MODE: {7}'.format(
+                'EPISODE: {0:6d} / TIME_STEP: {1:8d} / DURATION: {2:5d} / EPSILON: {3:.5f} / TOTAL_REWARD: {4:3.0f} '
+                '/ AVG_MAX_Q: {5:2.4f} / AVG_LOSS: {6:.5f} / MODE: {7}'.format(
                     episode, t, duration, epsilon.value(t),
                     total_reward, total_q_max / float(duration),
                     total_loss / float(duration), mode))
@@ -279,17 +282,16 @@ class Trainer(object):
             total_reward = 0.0
             done = False
             # 環境初期化
-            observation = self.env.reset()
+            obs = self.env.reset()
             # エピソード終了まで実行
             while not done:
                 # 行動を選択
-                action = self.choose_action_by_epsilon_greedy(self.env.action_space.n, q_func, 0.0, observation)
+                action = self.action(self.env.action_space.n, q_func, 0.0, obs)
                 # 行動を実行し，報酬と次の画面とdoneを観測
-                observation, reward, done, info = self.env.step(action)
+                obs, reward, done, info = self.env.step(action)
                 self.env.render()
                 total_reward += reward
                 t += 1
                 duration += 1
-            print('EPISODE: {0:6d} / TIMESTEP: {1:8d} / DURATION: {2:5d} / TOTAL_REWARD: {3:3.0f}'.format(
+            print('EPISODE: {0:6d} / TIME_STEP: {1:8d} / DURATION: {2:5d} / TOTAL_REWARD: {3:3.0f}'.format(
                     episode, t, duration, total_reward))
-

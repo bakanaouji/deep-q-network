@@ -4,6 +4,7 @@ import argparse
 from trainer import Trainer
 from env_wrappers import wrap_dqn
 
+
 def main():
     parser = argparse.ArgumentParser(description='Deep Q Network')
     # 環境側のパラメータ
@@ -36,7 +37,7 @@ def main():
     parser.add_argument('--replay_st_size', type=int, default=10000,
                         help='Uniform random policy is run for this number of frames before learning starts '
                              'and the resulting experience is used to populate the replay memory.')
-    parser.add_argument('--noop_max', type=int, default=30,
+    parser.add_argument('--no_op_max', type=int, default=30,
                         help='Maximum number of "do nothing" actions to be performed '
                              'by the agent at the start of an episode.')
 
@@ -53,7 +54,7 @@ def main():
     args = parser.parse_args()
 
     env = gym.make(args.env_name)
-    env = wrap_dqn(env, args.history_len, args.action_repeat, args.noop_max)
+    env = wrap_dqn(env, args.history_len, args.action_repeat, args.no_op_max)
 
     # 学習実行
     trainer = Trainer(env, args)
@@ -61,6 +62,7 @@ def main():
         trainer.test()
     else:
         trainer.learn()
+
 
 if __name__ == '__main__':
     main()
