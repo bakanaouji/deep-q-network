@@ -15,7 +15,7 @@ class CNN(object):
         self.model = Sequential()
         self.model.add(
                 Conv2D(
-                    8, (8, 8), strides=(4, 4), activation='relu',
+                    32, (8, 8), strides=(4, 4), activation='relu',
                     input_shape=(
                         agent_history_length,
                         frame_width,
@@ -24,7 +24,7 @@ class CNN(object):
                     data_format='channels_first'
                     )
                 )
-        self.model.add(Conv2D(16, (4, 4), strides=(2, 2), activation='relu'))
+        self.model.add(Conv2D(64, (4, 4), strides=(2, 2), activation='relu'))
         self.model.add(Flatten())
         self.model.add(Dense(512, activation='relu'))
         self.model.add(Dense(num_actions))
