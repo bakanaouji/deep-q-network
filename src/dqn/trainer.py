@@ -110,19 +110,19 @@ class Trainer(object):
         l: numpy.float32
             教師信号との誤差
         """
-        state_batch = []
+        obs_batch = []
         action_batch = []
         reward_batch = []
-        next_state_batch = []
+        next_obs_batch = []
         done_batch = []
         # Replay Memoryからランダムにミニバッチをサンプル
         batch = replay_mem.sample(self.batch_size)
 
         for data in batch:
-            state_batch.append(data[0])
+            obs_batch.append(data[0])
             action_batch.append(data[1])
             reward_batch.append(data[2])
-            next_state_batch.append(data[3])
+            next_obs_batch.append(data[3])
             done_batch.append(data[4])
 
         # 終了判定を，1（True），0（False）に変換
@@ -131,7 +131,7 @@ class Trainer(object):
         # Target Networkで次の状態でのQ値を計算
         target_q_values_batch = target_func.q_values.eval(
             feed_dict={target_func.s: np.float32(np.array(
-                next_state_batch))})
+                next_obs_batch))})
         # 教師信号を計算
         y_batch = reward_batch + (
             1.0 - done_batch) * self.discount_fact * np.max(
@@ -139,7 +139,7 @@ class Trainer(object):
             axis=1)
         # 誤差最小化
         l, _ = sess.run([loss, grad_update], feed_dict={
-            q_func.s: np.float32(np.array(state_batch)),
+            q_func.s: np.float32(np.array(obs_batch)),
             a: action_batch,
             y: y_batch
         })

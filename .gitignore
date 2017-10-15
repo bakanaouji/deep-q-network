@@ -39,8 +39,6 @@ bin
 *.swp
 *.bak
 
-#Log
-log
 saved_networks
 # summary
 
