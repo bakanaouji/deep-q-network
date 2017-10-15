@@ -3,6 +3,7 @@ import argparse
 import gym
 
 from dqn.trainer import Trainer
+from dqn.tester import Tester
 from envs.env_wrappers import wrap_dqn
 
 
@@ -18,7 +19,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Number of training cases over which each SGD update is computed.')
     parser.add_argument('--mem_size', type=int, default=10000,
-                        help='Gradient updates are sampled from this number of most recent frames.')
+                        help='SGD updates are sampled from this number of most recent frames.')
     parser.add_argument('--history_len', type=int, default=4,
                         help='Number of most recent frames experienced '
                              'by the agent that are given as input to the Q-Network.')
@@ -44,7 +45,7 @@ def main():
 
     # 学習時の設定
     parser.add_argument('--test', action='store_true', help='Whether to test')
-    parser.set_defaults(test=False)
+    parser.set_defaults(test=True)
     parser.add_argument('--render', action='store_true', help='Wheter to render')
     parser.set_defaults(render=False)
     parser.add_argument('--save_network_freq', type=int, default=100000,
@@ -52,16 +53,18 @@ def main():
                              'with which the Q-Network is saved.')
     parser.add_argument('--save_network_path', default='saved_networks', help='Path to save Q-Network.')
     parser.add_argument('--save_summary_path', default='summary', help='Path to save summary.')
+    parser.add_argument('--save_option_name', default='', help='Option saving name')
     args = parser.parse_args()
 
     env = gym.make(args.env_name)
     env = wrap_dqn(env, args.history_len, args.action_repeat, args.no_op_max)
 
-    # 学習実行
-    trainer = Trainer(env, args)
+    # 学習またはテスト実行
     if args.test:
-        trainer.test()
+        tester = Tester(env, args)
+        tester.test()
     else:
+        trainer = Trainer(env, args)
         trainer.learn()
 
 

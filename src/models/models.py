@@ -7,11 +7,17 @@ class CNN(object):
     def __init__(self, num_actions, agent_history_length, frame_width, frame_height):
         """
         Q-Networkをランダムな重みで初期化
-        :param num_actions:　行動数
-        :return:
-            s: Q-Networkへの入力
-            q_values: Q-Networkの出力
-            model: Q-Networkのモデル
+
+        Parameters
+        ----------
+        num_actions: int
+            行動数
+        agent_history_length: int
+            入力として受け取る観測の履歴の数
+        frame_width: int
+            画面の幅
+        frame_height: int
+            画面の高さ
         """
         self.model = Sequential()
         self.model.add(

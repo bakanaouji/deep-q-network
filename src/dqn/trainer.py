@@ -1,20 +1,19 @@
-import numpy as np
 import tensorflow as tf
 
 from dqn.replay_memory import ReplayMemory
 from models.models import CNN
 from util.log.logger import save_sess, restore_sess, Logger
-from util.schedules.linear_schedule import LinearSchedule
+from agents.agents import *
 
 
 class Trainer(object):
     def __init__(self, env, args):
         """
-        学習を行うTrainerを構築．
+        学習を行うTrainerクラス．
 
         Parameters
         ----------
-        env: gym.envs
+        env: gym.wrappers.time_limit.TimeLimit
             open ai gymの環境
         args:
             学習に必要なパラメータのリスト
@@ -37,8 +36,9 @@ class Trainer(object):
 
         self.render = args.render
         self.save_network_freq = args.save_network_freq
-        self.save_network_path = "../data/" + args.save_network_path + "/" + args.env_name + "_normal" + "/model.ckpt"
-        self.save_summary_path = "../data/" + args.save_summary_path + "/" + args.env_name + "_normal"
+        self.save_network_path = "../data/" + args.save_network_path + "/" + args.env_name + \
+                                 args.save_option_name + "/model.ckpt"
+        self.save_summary_path = "../data/" + args.save_summary_path + "/" + args.env_name + args.save_option_name
 
     def build_training_op(self, num_actions, q_func):
         """
@@ -81,33 +81,6 @@ class Trainer(object):
         grad_update = optimizer.minimize(loss, var_list=q_func.model.trainable_weights)
 
         return a, y, loss, grad_update
-
-    def action(self, num_actions, q_func, epsilon, obs):
-        """
-        ε-greedyに従って行動を選択．
-
-        Parameters
-        ----------
-        num_actions: int
-            環境の行動数
-        q_func: model.CNN
-            Q関数
-        epsilon: float
-            ε．ランダムに行動を決定する確率．
-        obs: np.ndarray
-            Q-Networkへの入力
-
-        Returns
-        ----------
-        action: int
-            選択した行動
-        """
-        if epsilon >= np.random.rand():
-            action = np.random.randint(num_actions)
-        else:
-            action = np.argmax(q_func.q_values.eval(
-                feed_dict={q_func.s: [obs]}))
-        return action
 
     def train(self, sess, q_func, a, y, loss, grad_update, replay_mem, target_func):
         """
@@ -203,11 +176,12 @@ class Trainer(object):
         # Target Networkの初期化
         sess.run(assign_target_network)
 
-        # ε．時間に対して線形で減少させる．
-        epsilon = LinearSchedule(schedule_time_steps=int(self.expl_frac * self.tmax),
-                                 initial_time_step=self.replay_st_size,
-                                 initial_p=1.0,
-                                 final_p=self.fin_expl)
+        # エージェント初期化
+        agent = DQNAgent(num_actions=self.env.action_space.n,
+                         q_func=q_func,
+                         schedule_time_steps=int(self.expl_frac * self.tmax),
+                         initial_time_step=self.replay_st_size,
+                         final_p=self.fin_expl)
 
         # Logger
         logger = Logger(sess, self.save_summary_path)
@@ -228,13 +202,13 @@ class Trainer(object):
             # エピソード終了まで実行
             while not done:
                 # 前の状態を保存
-                pre_observation = obs.copy()
+                pre_obs = obs.copy()
                 # ε-greedyに従って行動を選択
-                action = self.action(self.env.action_space.n, q_func, epsilon.value(t), obs)
+                action = agent.action(t, obs)
                 # 行動を実行し，報酬と次の画面とdoneを観測
                 obs, reward, done, info = self.env.step(action)
                 # replay memoryに(s_t,a_t,r_t,s_{t+1},done)を追加
-                replay_mem.add(pre_observation, action, reward, obs, done)
+                replay_mem.add(pre_obs, action, reward, obs, done)
                 if self.render:
                     self.env.render()
                 if t > self.replay_st_size and t % self.learn_freq:
@@ -253,47 +227,9 @@ class Trainer(object):
             if t >= self.replay_st_size:
                 logger.write(sess, total_reward, total_q_max / float(duration),
                              duration, total_loss / float(duration), t, episode)
-            if t < self.replay_st_size:
-                mode = 'random'
-            elif self.replay_st_size <= t < self.replay_st_size + self.expl_frac * self.tmax:
-                mode = 'explore'
-            else:
-                mode = 'exploit'
             print(
                 'EPISODE: {0:6d} / TIME_STEP: {1:8d} / DURATION: {2:5d} / EPSILON: {3:.5f} / TOTAL_REWARD: {4:3.0f} '
-                '/ AVG_MAX_Q: {5:2.4f} / AVG_LOSS: {6:.5f} / MODE: {7}'.format(
-                    episode, t, duration, epsilon.value(t),
+                '/ AVG_MAX_Q: {5:2.4f} / AVG_LOSS: {6:.5f}'.format(
+                    episode, t, duration, agent.epsilon.value(t),
                     total_reward, total_q_max / float(duration),
-                    total_loss / float(duration), mode))
-
-    def test(self):
-        # Q-Network
-        q_func = CNN(self.env.action_space.n, self.history_len, self.width, self.height)
-        # Sessionの構築
-        sess = tf.InteractiveSession()
-        # session読み込み
-        restore_sess(sess, self.save_network_path)
-
-        # メインループ
-        t = 0
-        episode = 0
-        while t < self.tmax:
-            # エピソード実行
-            episode += 1
-            duration = 0
-            total_reward = 0.0
-            done = False
-            # 環境初期化
-            obs = self.env.reset()
-            # エピソード終了まで実行
-            while not done:
-                # 行動を選択
-                action = self.action(self.env.action_space.n, q_func, 0.0, obs)
-                # 行動を実行し，報酬と次の画面とdoneを観測
-                obs, reward, done, info = self.env.step(action)
-                self.env.render()
-                total_reward += reward
-                t += 1
-                duration += 1
-            print('EPISODE: {0:6d} / TIME_STEP: {1:8d} / DURATION: {2:5d} / TOTAL_REWARD: {3:3.0f}'.format(
-                    episode, t, duration, total_reward))
+                    total_loss / float(duration)))

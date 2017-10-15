@@ -49,11 +49,11 @@ class NoOpResetEnv(gym.Wrapper):
         self.env.reset()
         # ランダムなフレーム数分「何もしない」
         t = np.random.randint(1, self.no_op_max + 1)
-        observation = None
+        obs = None
         for _ in range(t):
             # 「何もしない」で，次の画面を返す
-            observation, _, _, _ = self.env.step(0)
-        return observation
+            obs, _, _, _ = self.env.step(0)
+        return obs
 
 
 class MaxAndSkipEnv(gym.Wrapper):
@@ -63,7 +63,7 @@ class MaxAndSkipEnv(gym.Wrapper):
         指定数分行動を繰り返したら，直前のフレームの観測との最大値を状態として返す．
         """
         super(MaxAndSkipEnv, self).__init__(env)
-        self.observation_buffer = deque(maxlen=2)
+        self.obs_buffer = deque(maxlen=2)
         self.action_repeat = action_repeat
 
     def _step(self, action):
@@ -71,14 +71,14 @@ class MaxAndSkipEnv(gym.Wrapper):
         done = None
         info = None
         for _ in range(self.action_repeat):
-            observation, reward, done, info = self.env.step(action)
-            self.observation_buffer.append(observation)
+            obs, reward, done, info = self.env.step(action)
+            self.obs_buffer.append(obs)
             total_reward += reward
             if done:
                 break
 
         # 前のフレームの観測との最大値を状態として返す
-        max_frame = np.max(np.stack(self.observation_buffer), axis=0)
+        max_frame = np.max(np.stack(self.obs_buffer), axis=0)
         return max_frame, total_reward, done, info
 
 
@@ -92,13 +92,13 @@ class FireResetEnv(gym.Wrapper):
 
     def _reset(self):
         self.env.reset()
-        observation, _, done, _ = self.env.step(1)
+        obs, _, done, _ = self.env.step(1)
         if done:
             self.env.reset()
-        observation, _, done, _ = self.env.step(2)
+        obs, _, done, _ = self.env.step(2)
         if done:
             self.env.reset()
-        return observation
+        return obs
 
 
 class ProcessFrame84(gym.ObservationWrapper):
@@ -139,14 +139,14 @@ class FrameStack(gym.Wrapper):
         self.observation_space = spaces.Box(low=0, high=255, shape=(k * shp[2], shp[0], shp[1]))
 
     def _reset(self):
-        observation = self.env.reset()
+        obs = self.env.reset()
         for _ in range(self.k):
-            self.frames.append(observation)
+            self.frames.append(obs)
         return self._get_observation()
 
     def _step(self, action):
-        observation, reward, done, info = self.env.step(action)
-        self.frames.append(observation)
+        obs, reward, done, info = self.env.step(action)
+        self.frames.append(obs)
         return self._get_observation(), reward, done, info
 
     def _get_observation(self):
@@ -175,11 +175,11 @@ class ClippedRewardsWrapper(gym.RewardWrapper):
 
 
 class ScaledFloatFrame(gym.ObservationWrapper):
-    def _observation(self, observation):
+    def _observation(self, obs):
         """
         状態を255で割って正規化する
         """
-        return np.array(observation).astype(np.float32) / 255.0
+        return np.array(obs).astype(np.float32) / 255.0
 
 
 def wrap_dqn(env, history_len=4, action_repeat=4, no_op_max=30):
@@ -200,7 +200,7 @@ def wrap_dqn(env, history_len=4, action_repeat=4, no_op_max=30):
 
     Returns
     ----------
-    envs: gym.envs
+    env: gym.wrappers.time_limit.TimeLimit
         gym.envのラッパークラス
     """
     env = EpisodicLifeEnv(env)
