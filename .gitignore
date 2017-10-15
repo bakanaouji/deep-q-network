@@ -40,7 +40,7 @@ bin
 *.bak
 
 saved_networks
-# summary
+# data
 
 #tex
 *.aux
