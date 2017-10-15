@@ -37,7 +37,7 @@ class Trainer(object):
 
         self.render = args.render
         self.save_network_freq = args.save_network_freq
-        self.save_network_path = "../data/" + args.save_network_path + "/" + args.env_name + "_normal"
+        self.save_network_path = "../data/" + args.save_network_path + "/" + args.env_name + "_normal" + "/model.ckpt"
         self.save_summary_path = "../data/" + args.save_summary_path + "/" + args.env_name + "_normal"
 
     def build_training_op(self, num_actions, q_func):
@@ -204,7 +204,8 @@ class Trainer(object):
         sess.run(assign_target_network)
 
         # ε．時間に対して線形で減少させる．
-        epsilon = LinearSchedule(schedule_timesteps=int(self.expl_frac * self.tmax),
+        epsilon = LinearSchedule(schedule_time_steps=int(self.expl_frac * self.tmax),
+                                 initial_time_step=self.replay_st_size,
                                  initial_p=1.0,
                                  final_p=self.fin_expl)
 
