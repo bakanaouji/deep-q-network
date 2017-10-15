@@ -1,7 +1,9 @@
 # DeepQNetwork
 
 ## このリポジトリについて
-DeepQNetwork（http://www.nature.com/nature/journal/v518/n7540/full/nature14236.html?foxtrotcallback=true)をTensorflowとKerasを用いて実装したコードを公開しています．
+DeepQNetwork
+(http://www.nature.com/nature/journal/v518/n7540/full/nature14236.html?foxtrotcallback=true)
+をTensorflowとKerasを用いて実装したコードを公開しています．
 
 Open AI Gymが提供しているAtari 2600 gamesを学習させることを想定しています．
 DeepQNetworkの学習と，学習後のモデルのテストを行うことができます．
