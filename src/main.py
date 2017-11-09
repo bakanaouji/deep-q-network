@@ -46,7 +46,7 @@ def main():
     # 学習時の設定
     parser.add_argument('--test', action='store_true', help='Whether to test')
     parser.set_defaults(test=False)
-    parser.add_argument('--render', action='store_true', help='Wheter to render')
+    parser.add_argument('--render', action='store_true', help='Whether to render')
     parser.set_defaults(render=False)
     parser.add_argument('--save_network_freq', type=int, default=100000,
                         help='Frequency (measured in the number of action selections) '

@@ -31,7 +31,8 @@ class CNN(object):
                 data_format='channels_first'
             )
         )
-        self.model.add(Conv2D(64, (4, 4), strides=(2, 2), activation='relu'))
+        self.model.add(Conv2D(64, (4, 4), strides=(2, 2), activation='relu', data_format='channels_first'))
+        self.model.add(Conv2D(64, (3, 3), strides=(1, 1), activation='relu', data_format='channels_first'))
         self.model.add(Flatten())
         self.model.add(Dense(512, activation='relu'))
         self.model.add(Dense(num_actions))
