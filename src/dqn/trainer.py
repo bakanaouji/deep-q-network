@@ -211,7 +211,7 @@ class Trainer(object):
                 replay_mem.add(pre_obs, action, reward, obs, done)
                 if self.render:
                     self.env.render()
-                if t > self.replay_st_size and t % self.learn_freq:
+                if t > self.replay_st_size and t % self.learn_freq == 0:
                     # Q-Networkの学習
                     total_loss += self.train(sess, q_func, a, y, loss, grad_update, replay_mem, target_func)
                 if t > self.replay_st_size and t % self.update_freq == 0:
